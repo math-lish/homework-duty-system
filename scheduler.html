@@ -296,43 +296,70 @@
         }
         
         function displayResults() {
-            // Group by room for table format
             const rooms = {'301': [], '305': [], 'G01B': []};
             const allDates = [...new Set(dates.map(d => d.date))];
             
             dates.forEach(slot => {
                 slot.teachers.forEach(t => {
-                    rooms[t.room].push({date: slot.date, teacher: t.teacher});
+                    rooms[t.room].push({date: slot.date, day: slot.day, teacher: t.teacher});
                 });
             });
             
-            // Build room-based table (like the image)
-            let html = '<table style="width:100%; border-collapse:collapse;"><thead><tr><th style="background:#1e3c72;color:white;padding:10px;">地點</th>';
-            
-            // Date headers
+            // ========== Format 1: Rooms as top row, Dates in Column A ==========
+            let html1 = '<h3>第一款：課室在頂，日期在左</h3>';
+            html1 += '<table style="width:100%; border-collapse:collapse; margin-bottom:30px;"><thead><tr><th style="background:#1e3c72;color:white;padding:10px;">地點</th>';
             allDates.forEach(date => {
                 const slot = dates.find(d => d.date === date);
                 const day = slot ? 'Day ' + slot.day : '';
-                const shortDate = date.replace('2026-', '');
-                html += '<th style="background:#1e3c72;color:white;padding:8px;font-size:0.85rem;">' + shortDate + '<br>' + day + '</th>';
+                html1 += '<th style="background:#1e3c72;color:white;padding:6px;font-size:0.75rem;">' + date.replace('2026-','') + '<br>' + day + '</th>';
             });
-            html += '</tr></thead><tbody>';
-            
-            // Room rows
+            html1 += '</tr></thead><tbody>';
             ['301', '305', 'G01B'].forEach(room => {
-                html += '<tr><td style="background:#e3f2fd;padding:10px;font-weight:bold;">' + room + '</td>';
+                html1 += '<tr><td style="background:#e3f2fd;padding:8px;font-weight:bold;">' + room + '</td>';
                 allDates.forEach(date => {
-                    const assignment = rooms[room].find(r => r.date === date);
-                    const teacher = assignment ? assignment.teacher.replace('老師', '') : '';
-                    html += '<td style="padding:8px;text-align:center;border:1px solid #eee;">' + teacher + '</td>';
+                    const a = rooms[room].find(r => r.date === date);
+                    html1 += '<td style="padding:6px;text-align:center;border:1px solid #eee;font-size:0.85rem;">' + (a ? a.teacher.replace('老師','') : '') + '</td>';
                 });
-                html += '</tr>';
+                html1 += '</tr>';
             });
-            html += '</tbody></table>';
+            html1 += '</tbody></table>';
             
-            document.getElementById('scheduleBody').innerHTML = html;
+            // ========== Format 2: Rooms in Column A, 10 dates per row ==========
+            let html2 = '<h3>第二款：課室在左，10日一row</h3>';
             
-            // Summary
+            // Split dates into chunks of 10
+            const chunkSize = 10;
+            for (let i = 0; i < allDates.length; i += chunkSize) {
+                const chunkDates = allDates.slice(i, i + chunkSize);
+                
+                html2 += '<table style="width:100%; border-collapse:collapse; margin-bottom:20px;"><thead><tr><th style="background:#1e3c72;color:white;padding:8px;width:60px;">課室</th>';
+                chunkDates.forEach(date => {
+                    const slot = dates.find(d => d.date === date);
+                    const day = slot ? 'Day' + slot.day : '';
+                    html2 += '<th style="background:#1e3c72;color:white;padding:6px;font-size:0.75rem;">' + date.replace('2026-','') + '<br>' + day + '</th>';
+                });
+                // Fill empty columns to make 10
+                for (let j = chunkDates.length; j < 10; j++) {
+                    html2 += '<th style="background:#eee;padding:6px;"></th>';
+                }
+                html2 += '</tr></thead><tbody>';
+                
+                ['301', '305', 'G01B'].forEach(room => {
+                    html2 += '<tr><td style="background:#e3f2fd;padding:8px;font-weight:bold;text-align:center;">' + room + '</td>';
+                    chunkDates.forEach(date => {
+                        const a = rooms[room].find(r => r.date === date);
+                        html2 += '<td style="padding:6px;text-align:center;border:1px solid #eee;">' + (a ? a.teacher.replace('老師','') : '') + '</td>';
+                    });
+                    for (let j = chunkDates.length; j < 10; j++) {
+                        html2 += '<td style="background:#f9f9f9;border:1px solid #eee;"></td>';
+                    }
+                    html2 += '</tr>';
+                });
+                html2 += '</tbody></table>';
+            }
+            
+            document.getElementById('scheduleBody').innerHTML = html1 + html2;
+            
             const totalAssignments = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher !== '（待安排）').length, 0);
             const unassigned = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher === '（待安排）').length, 0);
             const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
