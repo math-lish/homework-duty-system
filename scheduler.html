@@ -222,31 +222,30 @@
 黃秀英, 2
 李偉倫, 1`;
 
-        const defaultDates = `2026-01-15, 1, 301
-2026-01-16, 2, 301
-2026-01-19, 1, 305
-2026-01-20, 2, 305
-2026-01-21, 3, 301
-2026-01-22, 4, 301
-2026-01-23, 5, 305
-2026-01-26, 1, 301
-2026-01-27, 2, 301
-2026-01-28, 3, 305
-2026-01-29, 4, 305
-2026-01-30, 5, 301
-2026-02-03, 1, 301
-2026-02-04, 2, 305
-2026-02-05, 3, 305
-2026-02-06, 4, 301
-2026-02-09, 1, 305
-2026-02-10, 2, 301
-2026-02-11, 3, 305
-2026-02-12, 4, 301
-2026-02-13, 5, 305
-2026-02-24, 1, 301
-2026-02-25, 2, 301
-2026-02-26, 3, 305
-2026-02-27, 4, 305`;
+        const defaultDates = `2026-01-15, 1
+2026-01-16, 2
+2026-01-19, 3
+2026-01-20, 4
+2026-01-21, 5
+2026-01-22, 1
+2026-01-23, 2
+2026-01-26, 3
+2026-01-27, 4
+2026-01-28, 5
+2026-01-29, 1
+2026-01-30, 2
+2026-02-03, 3
+2026-02-04, 4
+2026-02-05, 5
+2026-02-06, 1
+2026-02-09, 2
+2026-02-10, 3
+2026-02-11, 4
+2026-02-12, 5
+2026-02-24, 1
+2026-02-25, 2
+2026-02-26, 3
+2026-02-27, 4`;
 
         // 初始化
         document.getElementById('teachersInput').value = defaultTeachers;
@@ -265,11 +264,18 @@
                 };
             });
 
-            // 解析日期數據
+            // 解析日期數據（改為：日期, Day編號）
             const datesText = document.getElementById('datesInput').value.trim();
             const dates = datesText.split('\n').filter(line => line.trim()).map(line => {
-                const [date, day, room] = line.split(',').map(s => s.trim());
-                return { date, day, room, teacher: null };
+                const [date, day] = line.split(',').map(s => s.trim());
+                return { date, day: parseInt(day), rooms: [], teachers: [] };
+            });
+
+            // 按Day分組
+            const daysMap = {};
+            dates.forEach(d => {
+                if (!daysMap[d.day]) daysMap[d.day] = [];
+                daysMap[d.day].push(d);
             });
 
             // 解析偏好
@@ -302,36 +308,52 @@
             // 根據上學期次數排序（少既排先）
             teachers.sort((a, b) => a.prevCount - b.prevCount);
 
-            // 編排演算法
-            dates.forEach(slot => {
-                const dayNum = parseInt(slot.day);
+            // 房間優先順序
+            const roomPriority = ['301', '305', 'G01B'];
+
+            // 編排演算法 - 每日3位老師
+            Object.keys(daysMap).forEach(dayNum => {
+                const daySlots = daysMap[dayNum];
+                const dayNumInt = parseInt(dayNum);
                 
-                // 找出呢日可以做既老師
-                let available = teachers.filter(t => {
-                    // 每人最多2次/學期
-                    if (t.assignedCount >= 2) return false;
-                    // 避開cannot既days
-                    if (t.cannot.includes(dayNum)) return false;
-                    return true;
-                });
+                // 呢日已經assign咗既老師
+                const usedToday = [];
+                
+                // 每間房分配一個老師
+                roomPriority.forEach((room, idx) => {
+                    // 呢間房呢日既slot
+                    const slot = daySlots[idx];
+                    if (!slot) return;
+                    
+                    slot.room = room;
+                    
+                    // 搵可以做既老師（唔係呢日用過 + 符合偏好 + 未夠次數）
+                    let available = teachers.filter(t => {
+                        if (usedToday.includes(t.name)) return false;
+                        if (t.assignedCount >= 2) return false;
+                        if (t.cannot.includes(dayNumInt)) return false;
+                        return true;
+                    });
 
-                // 按公平排序（prefer既排先，然後按上學期次數）
-                available.sort((a, b) => {
-                    const aPrefers = a.prefer.includes(dayNum) ? 0 : 1;
-                    const bPrefers = b.prefer.includes(dayNum) ? 0 : 1;
-                    if (aPrefers !== bPrefers) return aPrefers - bPrefers;
-                    return a.prevCount - b.prevCount;
-                });
+                    // 排序：prefer > 上學期次數少 > 呢日未做過
+                    available.sort((a, b) => {
+                        const aPrefers = a.prefer.includes(dayNumInt) ? 0 : 1;
+                        const bPrefers = b.prefer.includes(dayNumInt) ? 0 : 1;
+                        if (aPrefers !== bPrefers) return aPrefers - bPrefers;
+                        return a.prevCount - b.prevCount;
+                    });
 
-                // 揀最啱既老師
-                if (available.length > 0) {
-                    const selected = available[0];
-                    slot.teacher = selected.name;
-                    selected.assignedCount++;
-                    selected.assignments.push(slot.date);
-                } else {
-                    slot.teacher = '（待安排）';
-                }
+                    // 揀老師
+                    if (available.length > 0) {
+                        const selected = available[0];
+                        slot.teacher = selected.name;
+                        selected.assignedCount++;
+                        selected.assignments.push(slot.date);
+                        usedToday.push(selected.name);
+                    } else {
+                        slot.teacher = '（待安排）';
+                    }
+                });
             });
 
             // 顯示結果
