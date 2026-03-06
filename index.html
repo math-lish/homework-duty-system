@@ -221,9 +221,9 @@
             dates = [];
             rawDates.split('\n').forEach(l => {
                 if (!l.trim()) return;
-                const m = l.match(/(2026[/-]\d+[/-]\d+)/);
+                const m = l.replace(/\t/g,' ').match(/(202[56][/-]\d+[/-]\d+)/);
                 if (m) {
-                    const nums = l.match(/\d+/g);
+                    const nums = l.replace(/\t/g,' ').match(/\d+/g);
                     // Get day number - handle tab (Excel paste) or comma or just space
                     let day = 1;
                     // Try to find a number after the date - check tab, comma, or space
