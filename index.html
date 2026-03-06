@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欠交功課當值表格製作系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+ Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        header h1 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            color: #666;
+        }
+        
+        /* Progress Section */
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .section h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+        
+        /* Phase Cards */
+        .phase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .phase-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #ddd;
+            transition: all 0.3s;
+        }
+        
+        .phase-card.pending { border-left-color: #ffc107; }
+        .phase-card.in-progress { border-left-color: #2196F3; }
+        .phase-card.done { border-left-color: #4CAF50; }
+        
+        .phase-card h3 {
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        .phase-card.pending h3 { color: #ffc107; }
+        .phase-card.in-progress h3 { color: #2196F3; }
+        .phase-card.done h3 { color: #4CAF50; }
+        
+        .phase-card p {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.in-progress { background: #cfe2ff; color: #084298; }
+        .status-badge.done { background: #d1e7dd; color: #0f5132; }
+        
+        /* Rules Section */
+        .rules-list {
+            list-style: none;
+        }
+        
+        .rules-list li {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .rules-list li::before {
+            content: "📋";
+        }
+        
+        /* Calendar Placeholder */
+        .calendar-note {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #ff9800;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 欠交功課當值表格製作系統</h1>
+            <p>中華聖潔會靈風中學 | 2025-26學年</p>
+        </header>
+        
+        <!-- System Overview -->
+        <div class="section">
+            <h2>📊 系統概覽</h2>
+            <div class="phase-grid">
+                <div class="phase-card pending">
+                    <h3>👥 收集同事意願</h3>
+                    <p>收集各同事prefer既day、唔想做既day、必定唔可以做既日子</p>
+                    <span class="status-badge pending">待開始</span>
+                </div>
+                <div class="phase-card pending">
+                    <h3>📝 編排301室</h3>
+                    <p>根據上學期當值次數排序，先編配301室當值</p>
+                    <span class="status-badge pending">待開始</span>
+                </div>
+                <div class="phase-card pending">
+                    <h3>🏫 編排305室</h3>
+                    <p>因應星期一/假期後預兩班房，先編配305室</p>
+                    <span class="status-badge pending">待開始</span>
+                </div>
+                <div class="phase-card pending">
+                    <h3>🔄 最終調整</h3>
+                    <p>每日視乎人數決定房間數量，優先301→305→G01B</p>
+                    <span class="status-badge pending">待開始</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rules -->
+        <div class="section">
+            <h2>📜 編配規則</h2>
+            <ul class="rules-list">
+                <li>首學期同事當值次數與平均相若</li>
+                <li>首兩個學期同事當值次數與平均相若</li>
+                <li>每學期同事最多當值兩次</li>
+                <li>第一、二學期共最多3次</li>
+                <li>預算有61位同事當值</li>
+                <li>冇當值既同事次數唔計算</li>
+                <li>學期完結時總結當值次數，用作下學期編配</li>
+            </ul>
+        </div>
+        
+        <!-- Background Info -->
+        <div class="section">
+            <h2>📅 背景資料</h2>
+            <ul class="rules-list">
+                <li>5 day制，每學期一次考試</li>
+                <li>每學期有一星期溫習週</li>
+                <li>第二、三學期各有兩日學行會議半天上課</li>
+                <li>星期一及暑假後第一天最多人留堂</li>
+                <li>溫習週、考試、放假、半天上課，Day 5通常冇欠交</li>
+            </ul>
+            <div class="calendar-note" style="margin-top: 15px;">
+                <p>⚠️ 校曆表稍後提供</p>
+            </div>
+        </div>
+        
+        <!-- Data Structure -->
+        <div class="section">
+            <h2>💾 數據結構（規劃中）</h2>
+            <ul class="rules-list">
+                <li>同事名單：姓名、部門、當值次數統計</li>
+                <li>意願表：prefer day / 唔想做 / 必定唔可以做</li>
+                <li>編配記錄：學期、房間、日期、當值同事</li>
+                <li>統計數據：每學期當值次數、總結排名</li>
+            </ul>
+        </div>
+        
+        <footer>
+            <p>🕹️ 系統製作中... | 更新日期：2026年3月6日</p>
+        </footer>
+    </div>
+</body>
+</html>
