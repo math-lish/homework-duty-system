@@ -154,6 +154,13 @@
             </div>
             
             <div class="input-group">
+                <label>初中班主任名單 (溫習週時豁免，每行一個名稱)</label>
+                <textarea id="juniorClassTeachers" placeholder="張老師
+李老師
+..."></textarea>
+            </div>
+            
+            <div class="input-group">
                 <label>當值日期 (由Excel Column A貼上)</label>
 <textarea id="rawDates" placeholder="2026-03-16	1
 2026-03-17	2
@@ -270,8 +277,15 @@
             const rawExempt = document.getElementById('exemptTeachers').value.trim();
             const exemptList = rawExempt ? rawExempt.split('\n').map(n => n.trim()).filter(n => n) : [];
             
+            // Parse junior class teachers (exempt during revision weeks)
+            const rawJunior = document.getElementById('juniorClassTeachers').value.trim();
+            const juniorList = rawJunior ? rawJunior.split('\n').map(n => n.trim()).filter(n => n) : [];
+            
             // Filter out exempt teachers
             teachers = teachers.filter(t => !exemptList.includes(t.name));
+            
+            // Store for revision week handling
+            window.juniorClassTeachers = juniorList;
             
             if (teachers.length === 0) {
                 alert('所有老師都豁免咗！');
@@ -302,21 +316,27 @@
                     let available = teachers.filter(t => {
                         if (usedToday.includes(t.name)) return false;
                         if (t.assignedCount >= 3) return false;  // Max 3 per term
+                        // For revision weeks, exclude junior class teachers
+                        if (isRevision && juniorList.includes(t.name)) return false;
                         return true;
                     });
                     
                     // Sort: prioritize by (prevCount + assignedCount), then term1=0
+                    // Also prefer teachers with fewer assignments to this room
                     available.sort((a, b) => {
                         const totalA = a.prevCount + a.assignedCount;
                         const totalB = b.prevCount + b.assignedCount;
                         if (totalA !== totalB) return totalA - totalB;
-                        return a.term1Count - b.term1Count;
+                        if (a.term1Count !== b.term1Count) return a.term1Count - b.term1Count;
+                        // Prefer teacher with fewer of this room type
+                        return (a.roomCounts[room] || 0) - (b.roomCounts[room] || 0);
                     });
                     
                     if (available.length > 0) {
                         const selected = available[0];
                         slot.teachers.push({ room: room, teacher: selected.name });
                         selected.assignedCount++;
+                        selected.roomCounts[room] = (selected.roomCounts[room] || 0) + 1;
                         usedToday.push(selected.name);
                     } else {
                         slot.teachers.push({ room: room, teacher: '（待安排）' });
