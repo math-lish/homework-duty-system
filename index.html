@@ -54,12 +54,12 @@
         textarea::placeholder {
             color: #999;
             font-style: italic;
+            opacity: 1;
         }
         
         textarea:focus {
             outline: none;
             border-color: #1e3c72;
-            background: #fff;
         }
         
         button {
@@ -134,7 +134,16 @@
                 <label>老師數據 (格式：老師名稱, 上學期當值次數, 上上學期當值次數)</label>
 <textarea id="rawTeachers" placeholder="陳大明	2	0	0	2
 李四海	1	1	0	2
-林美娟	2	1	0	3"></textarea>
+林美娟	2	1	0	3">陳大明	2	0	0	2
+李四海	1	1	0	2
+林美娟	2	1	0	3
+陳曉敏	1	1	0	2
+劉志強	1	1	0	2
+吳美蘭	0	1	0	1
+鄭家偉	1	0	1	2
+孫曉彤	1	0	0	1
+周志明	1	2	0	3
+吳耀祖	0	2	1	3</textarea>
 李四海	1	1	0	2
 林美娟	2	1	0	3">陳大明	2	0	0	2
 李四海	1	1	0	2
@@ -169,16 +178,17 @@
 ..."></textarea>
             </div>
             
-            <textarea id="exemptTeachers" placeholder="張老師
-李老師
-..."></textarea>
-            </div>
-            
             <div class="input-group">
                 <label>當值日期 (由Excel Column A貼上)</label>
 <textarea id="rawDates" placeholder="2026-03-16	1
 2026-03-17	2
-2026-03-18	3"></textarea>
+2026-03-18	3">2026-03-16	1
+2026-03-17	2
+2026-03-18	3
+2026-03-19	4
+2026-03-23	1
+2026-03-24	2
+2026-03-25	3</textarea>
 2026-03-17,2
 2026-03-18,3">2026-03-16	1
 2026-03-17	2
@@ -325,14 +335,11 @@
                 
                 roomPriority.forEach((room, roomIndex) => {
                     // Find available teacher
-                    const juniorList = window.juniorClassTeachers || [];
-                let available = teachers.filter(t => {
-                    if (usedToday.includes(t.name)) return false;
-                    if (t.assignedCount >= 3) return false;
-                    // For revision weeks, exclude junior class teachers
-                    if (isRevision && juniorList.includes(t.name)) return false;
-                    return true;
-                });
+                    let available = teachers.filter(t => {
+                        if (usedToday.includes(t.name)) return false;
+                        if (t.assignedCount >= 3) return false;  // Max 3 per term
+                        return true;
+                    });
                     
                     // Sort by total + term1=0 priority + room distribution
                     available.sort((a, b) => {
@@ -340,7 +347,6 @@
                         const totalB = b.prevCount + b.assignedCount;
                         if (totalA !== totalB) return totalA - totalB;
                         if (a.term1Count !== b.term1Count) return a.term1Count - b.term1Count;
-                        // Prefer teacher with fewer of this room
                         return (a.roomCounts[room] || 0) - (b.roomCounts[room] || 0);
                     });
                     
