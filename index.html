@@ -173,7 +173,19 @@
             
             <div class="input-group">
                 <label>溫習週日期 (格式：日期, Day，例如：2026-05-04,1)</label>
-                <textarea id="revisionDates" placeholder="2026-05-04,1
+                </div>
+            
+            <div class="input-group">
+                <label>絕對優先條件 (格式：老師姓名,Day，例如：陳小明,1)</label>
+                <textarea id="absoluteConditions"></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>盡量滿足條件 (格式：老師姓名,+Day/-Day，例如：李老師,+1,-5)</label>
+                <textarea id="preferenceConditions"></textarea>
+            </div>
+            
+            <textarea id="revisionDates" placeholder="2026-05-04,1
 2026-05-05,2
 ..."></textarea>
             </div>
@@ -233,74 +245,11 @@
     </div>
     
     <script>
-
-        let editMode = false;
-        let savedResults = [];
-        
-        function enterEditMode() {
-            editMode = true;
-            savedResults = JSON.parse(JSON.stringify(dates));
-            displayResults();
-            alert('手動調整模式：點擊老師名稱可交換位置，完成後點擊「儲存」或「取消」');
-        }
-        
-        function enterEditMode() {
-            editMode = true;
-            savedResults = JSON.parse(JSON.stringify(dates));
-            document.getElementById('editBtn').style.display = 'none';
-            document.getElementById('saveBtn').style.display = 'inline-block';
-            document.getElementById('confirmBtn').style.display = 'inline-block';
-            document.getElementById('cancelBtn').style.display = 'inline-block';
-            displayResults();
-            alert('手動調整模式：點擊老師名稱可交換位置');
-        }
-        
-        function saveEdit() {
-            // Save current changes and check violations
-            validateConditions();
-        }
-        
-        function confirmEdit() {
-            editMode = false;
-            document.getElementById('editBtn').style.display = 'inline-block';
-            document.getElementById('saveBtn').style.display = 'none';
-            document.getElementById('confirmBtn').style.display = 'none';
-            document.getElementById('cancelBtn').style.display = 'none';
-            alert('已儲存更改！');
-        }
-        
-        function cancelEdit() {
-            dates = JSON.parse(JSON.stringify(savedResults));
-            editMode = false;
-            document.getElementById('editBtn').style.display = 'inline-block';
-            document.getElementById('saveBtn').style.display = 'none';
-            document.getElementById('confirmBtn').style.display = 'none';
-            document.getElementById('cancelBtn').style.display = 'none';
-            displayResults();
-        }
-        
-        function swapTeachers(slotIdx, room1, room2) {
-            if (!editMode) return;
-            const slot = dates[slotIdx];
-            const t1 = slot.teachers.find(t => t.room === room1);
-            const t2 = slot.teachers.find(t => t.room === room2);
-            if (t1 && t2 && t1.teacher !== '（待安排）' && t2.teacher !== '（待安排）') {
-                [t1.teacher, t2.teacher] = [t2.teacher, t1.teacher];
-                displayResults();
-            }
-        }
-        
-        function showVertical() {
-            currentFormat = 'vertical';
-            displayResults();
-        }
-        
-        <script>
         let teachers = [];
         let dates = [];
         
         function loadFromSheet() {
-            // Clear previous results
+            // Add this to global scope
             document.getElementById('resultsSection').innerHTML = '';
             document.getElementById('resultsSection').style.display = 'none';
             // Process teachers from raw input
@@ -407,6 +356,44 @@
                             } else if (p.startsWith('-')) {
                                 pref.avoid.push(parseInt(p.substring(1)));
                             }
+                        }
+                        if (name) preferenceConditions[name] = pref;
+                    }
+                });
+            }
+            window.preferenceConditions = preferenceConditions;
+            
+            // Parse absolute conditions
+            const rawAbsolute = document.getElementById('absoluteConditions').value.trim();
+            const absoluteConditions = {};
+            if (rawAbsolute) {
+                rawAbsolute.split('\n').forEach(l => {
+                    const parts = l.includes(',') ? l.split(',') : l.split('\t');
+                    if (parts.length >= 2) {
+                        const name = parts[0].trim();
+                        const day = parseInt(parts[1].trim());
+                        if (name && day) {
+                            if (!absoluteConditions[name]) absoluteConditions[name] = [];
+                            absoluteConditions[name].push(day);
+                        }
+                    }
+                });
+            }
+            window.absoluteConditions = absoluteConditions;
+            
+            // Parse preference conditions
+            const rawPrefs = document.getElementById('preferenceConditions').value.trim();
+            const preferenceConditions = {};
+            if (rawPrefs) {
+                rawPrefs.split('\n').forEach(l => {
+                    const parts = l.split(',');
+                    if (parts.length >= 2) {
+                        const name = parts[0].trim();
+                        const pref = { prefer: [], avoid: [] };
+                        for (let i = 1; i < parts.length; i++) {
+                            const p = parts[i].trim();
+                            if (p.startsWith('+')) pref.prefer.push(parseInt(p.substring(1)));
+                            else if (p.startsWith('-')) pref.avoid.push(parseInt(p.substring(1)));
                         }
                         if (name) preferenceConditions[name] = pref;
                     }
@@ -645,17 +632,12 @@
             navigator.clipboard.writeText(text);
             alert('已複製Word格式！');
         }
-</script>
-        
+
+
+        // New features
         let editMode = false;
         let savedResults = [];
-        
-        function enterEditMode() {
-            editMode = true;
-            savedResults = JSON.parse(JSON.stringify(dates));
-            displayResults();
-            alert('手動調整模式：點擊老師名稱可交換位置，完成後點擊「儲存」或「取消」');
-        }
+        let currentFormat = 'excel';
         
         function enterEditMode() {
             editMode = true;
@@ -669,7 +651,6 @@
         }
         
         function saveEdit() {
-            // Save current changes and check violations
             validateConditions();
         }
         
@@ -708,7 +689,58 @@
             displayResults();
         }
         
-        <script>
+        function showExcel() {
+            currentFormat = 'excel';
+            displayResults();
+        }
+        
+        function showWord() {
+            currentFormat = 'word';
+            displayResults();
+        }
+        
+        // Validation function
+        function validateConditions() {
+            const absCond = window.absoluteConditions || {};
+            const prefCond = window.preferenceConditions || {};
+            const violations = [];
+            
+            dates.forEach(slot => {
+                slot.teachers.forEach(t => {
+                    const teacher = t.teacher;
+                    if (teacher === '（待安排）') return;
+                    
+                    if (absCond[teacher] && absCond[teacher].includes(parseInt(slot.day))) {
+                        violations.push({
+                            teacher: teacher,
+                            message: `老師 ${teacher} 絕對不能Day ${slot.day}當值，但被編配到 ${slot.date}`
+                        });
+                    }
+                    
+                    if (prefCond[teacher] && prefCond[teacher].avoid && prefCond[teacher].avoid.includes(slot.day)) {
+                        violations.push({
+                            teacher: teacher,
+                            message: `老師 ${teacher} 尽量避免Day ${slot.day}當值，但被編配到 ${slot.date}`
+                        });
+                    }
+                });
+            });
+            
+            if (violations.length > 0) {
+                let html = '<div style="margin-top:20px;padding:15px;background:#fff3cd;border-radius:10px;">';
+                html += '<h3 style="color:#856404;margin-top:0;">⚠️ 未能完全滿足既條件</h3>';
+                html += '<ul style="color:#856404;">';
+                violations.forEach(v => {
+                    html += `<li>${v.message}</li>`;
+                });
+                html += '</ul></div>';
+                
+                const resultsDiv = document.getElementById('resultsSection');
+                resultsDiv.innerHTML += html;
+            }
+        }
+</script>
+<script>
 function clearDefault(el) {
     if (el.dataset.cleared !== 'true') {
         el.value = '';
@@ -723,4 +755,113 @@ function restoreDefault(el) {
         el.dataset.cleared = 'false';
     }
 }
-</script></body></html>
+
+
+        // New features
+        let editMode = false;
+        let savedResults = [];
+        let currentFormat = 'excel';
+        
+        function enterEditMode() {
+            editMode = true;
+            savedResults = JSON.parse(JSON.stringify(dates));
+            document.getElementById('editBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'inline-block';
+            document.getElementById('confirmBtn').style.display = 'inline-block';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+            displayResults();
+            alert('手動調整模式：點擊老師名稱可交換位置');
+        }
+        
+        function saveEdit() {
+            validateConditions();
+        }
+        
+        function confirmEdit() {
+            editMode = false;
+            document.getElementById('editBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            alert('已儲存更改！');
+        }
+        
+        function cancelEdit() {
+            dates = JSON.parse(JSON.stringify(savedResults));
+            editMode = false;
+            document.getElementById('editBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            displayResults();
+        }
+        
+        function swapTeachers(slotIdx, room1, room2) {
+            if (!editMode) return;
+            const slot = dates[slotIdx];
+            const t1 = slot.teachers.find(t => t.room === room1);
+            const t2 = slot.teachers.find(t => t.room === room2);
+            if (t1 && t2 && t1.teacher !== '（待安排）' && t2.teacher !== '（待安排）') {
+                [t1.teacher, t2.teacher] = [t2.teacher, t1.teacher];
+                displayResults();
+            }
+        }
+        
+        function showVertical() {
+            currentFormat = 'vertical';
+            displayResults();
+        }
+        
+        function showExcel() {
+            currentFormat = 'excel';
+            displayResults();
+        }
+        
+        function showWord() {
+            currentFormat = 'word';
+            displayResults();
+        }
+        
+        // Validation function
+        function validateConditions() {
+            const absCond = window.absoluteConditions || {};
+            const prefCond = window.preferenceConditions || {};
+            const violations = [];
+            
+            dates.forEach(slot => {
+                slot.teachers.forEach(t => {
+                    const teacher = t.teacher;
+                    if (teacher === '（待安排）') return;
+                    
+                    if (absCond[teacher] && absCond[teacher].includes(parseInt(slot.day))) {
+                        violations.push({
+                            teacher: teacher,
+                            message: `老師 ${teacher} 絕對不能Day ${slot.day}當值，但被編配到 ${slot.date}`
+                        });
+                    }
+                    
+                    if (prefCond[teacher] && prefCond[teacher].avoid && prefCond[teacher].avoid.includes(slot.day)) {
+                        violations.push({
+                            teacher: teacher,
+                            message: `老師 ${teacher} 尽量避免Day ${slot.day}當值，但被編配到 ${slot.date}`
+                        });
+                    }
+                });
+            });
+            
+            if (violations.length > 0) {
+                let html = '<div style="margin-top:20px;padding:15px;background:#fff3cd;border-radius:10px;">';
+                html += '<h3 style="color:#856404;margin-top:0;">⚠️ 未能完全滿足既條件</h3>';
+                html += '<ul style="color:#856404;">';
+                violations.forEach(v => {
+                    html += `<li>${v.message}</li>`;
+                });
+                html += '</ul></div>';
+                
+                const resultsDiv = document.getElementById('resultsSection');
+                resultsDiv.innerHTML += html;
+            }
+        }
+</script>
+</body>
+</html>
