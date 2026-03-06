@@ -120,7 +120,7 @@
             </div>
             
             <div class="input-group">
-                <label>老師數據 (由Excel貼上，格式：老師ID, 第一學期, 第二學期, 第三學期... 或淨係貼最後果行總計)</label>
+                <label>老師數據 (格式：老師ID, 301次數, 305次數, G01A次數, 總次數)</label>
                 <textarea id="rawTeachers" placeholder="例如：
 1	2	0	0	2
 2	2	0	0	2
@@ -197,7 +197,7 @@
                     // The 4th number seems to be term 2
                     const term2Count = nums.length >= 5 ? nums[4] : (nums.length >= 2 ? nums[1] : 0);
                     if (teacherId && teacherId > 0 && teacherId <= 61) {
-                        teacherCounts[teacherId] = term2Count || 0;
+                        teacherCounts[teacherId] = totalCount || 0;
                     }
                 }
             }
