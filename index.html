@@ -515,7 +515,17 @@
                 html += '</ul></div>';
                 
                 const resultsDiv = document.getElementById('resultsSection');
-                if (resultsDiv) { resultsDiv.innerHTML = '<h2>結果</h2>' + html; }
+                // Fallback: if resultsDiv doesn't exist, create it
+            let resultsContainer = document.getElementById('resultsSection');
+            if (!resultsContainer) {
+                resultsContainer = document.createElement('div');
+                resultsContainer.id = 'resultsSection';
+                document.body.appendChild(resultsContainer);
+            }
+            if (resultsContainer) {
+                resultsContainer.innerHTML = '<h2>結果</h2><div class="section">' + html + '</div>';
+                resultsContainer.style.display = 'block';
+            }
             }
         }
         
