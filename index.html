@@ -51,6 +51,17 @@
             font-size: 0.9rem;
         }
         
+        textarea::placeholder {
+            color: #999;
+            font-style: italic;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #1e3c72;
+            background: #fff;
+        }
+        
         button {
             padding: 15px 30px;
             border: none;
@@ -123,16 +134,7 @@
                 <label>老師數據 (格式：老師名稱, 上學期當值次數, 上上學期當值次數)</label>
 <textarea id="rawTeachers" placeholder="陳大明	2	0	0	2
 李四海	1	1	0	2
-林美娟	2	1	0	3">陳大明	2	0	0	2
-李四海	1	1	0	2
-林美娟	2	1	0	3
-陳曉敏	1	1	0	2
-劉志強	1	1	0	2
-吳美蘭	0	1	0	1
-鄭家偉	1	0	1	2
-孫曉彤	1	0	0	1
-周志明	1	2	0	3
-吳耀祖	0	2	1	3</textarea>
+林美娟	2	1	0	3"></textarea>
 李四海	1	1	0	2
 林美娟	2	1	0	3">陳大明	2	0	0	2
 李四海	1	1	0	2
@@ -176,13 +178,7 @@
                 <label>當值日期 (由Excel Column A貼上)</label>
 <textarea id="rawDates" placeholder="2026-03-16	1
 2026-03-17	2
-2026-03-18	3">2026-03-16	1
-2026-03-17	2
-2026-03-18	3
-2026-03-19	4
-2026-03-23	1
-2026-03-24	2
-2026-03-25	3</textarea>
+2026-03-18	3"></textarea>
 2026-03-17,2
 2026-03-18,3">2026-03-16	1
 2026-03-17	2
