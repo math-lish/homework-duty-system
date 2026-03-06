@@ -120,7 +120,7 @@
             </div>
             
             <div class="input-group">
-                <label>老師數據 (格式：老師ID, 301次數, 305次數, G01A次數, 總次數)</label>
+                <label>老師數據 (格式：老師名稱, 上學期當值次數, 上上學期當值次數)</label>
 <textarea id="rawTeachers" placeholder="陳大明	2	0	0	2
 李四海	1	1	0	2
 林美娟	2	1	0	3">陳大明	2	0	0	2
@@ -210,13 +210,26 @@
                 const parts = l.includes('\t') ? l.split('\t') : l.split(',');
                 if (parts.length >= 2) {
                     const name = parts[0].trim();
-                    const total = parseInt(parts[parts.length-1].trim()) || 0;
-                    if (name) teachers.push({name: name, prevCount: total, assignedCount: 0});
+                    // Format: Name, lastTermCount, beforeLastTermCount
+                    const lastTerm = parseInt(parts[1].trim()) || 0;
+                    const beforeLastTerm = parts.length >= 3 ? (parseInt(parts[2].trim()) || 0) : 0;
+                    const total = lastTerm + beforeLastTerm;
+                    if (name) teachers.push({
+                        name: name, 
+                        prevCount: total, 
+                        lastTermCount: lastTerm,
+                        beforeLastTermCount: beforeLastTerm,
+                        assignedCount: 0
+                    });
                 }
             });
             
-            // Sort by duty count ascending
-            teachers.sort((a, b) => a.prevCount - b.prevCount);
+            // Sort: 1) by total count ascending, 2) if same, prioritize those with 0 last term
+            teachers.sort((a, b) => {
+                if (a.prevCount !== b.prevCount) return a.prevCount - b.prevCount;
+                // Same total - prioritize those with 0 last term
+                return a.lastTermCount - b.lastTermCount;
+            });
             
             dates = [];
             rawDates.split('\n').forEach(l => {
@@ -270,8 +283,14 @@
                         return true;
                     });
                     
-                    // Sort by TOTAL count (prevCount + assignedCount) ascending to distribute evenly
-                    available.sort((a, b) => (a.prevCount + a.assignedCount) - (b.prevCount + b.assignedCount));
+                    // Sort by current total + prioritize those with 0 last term
+                    available.sort((a, b) => {
+                        const totalA = a.prevCount + a.assignedCount;
+                        const totalB = b.prevCount + b.assignedCount;
+                        if (totalA !== totalB) return totalA - totalB;
+                        // Same total - prioritize zero from last term
+                        return a.lastTermCount - b.lastTermCount;
+                    });
                     
                     if (available.length > 0) {
                         const selected = available[0];
