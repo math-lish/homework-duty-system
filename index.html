@@ -238,8 +238,11 @@
         
         function loadFromSheet() {
             // Clear previous results
-            document.getElementById('resultsSection').innerHTML = '';
-            document.getElementById('resultsSection').style.display = 'none';
+            const resultsSection = document.getElementById('resultsSection');
+            if (resultsSection) {
+                resultsSection.innerHTML = '';
+                resultsSection.style.display = 'none';
+            }
             // Process teachers from raw input
             const rawTeachers = document.getElementById('rawTeachers').value.trim();
             const rawDates = document.getElementById('rawDates').value.trim();
