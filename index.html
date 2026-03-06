@@ -757,18 +757,31 @@
                             document.getElementById('tableBody').innerHTML = html;
                         }
                         
+                        let selectedSlot = null;
+                        let selectedRoom = null;
+                        
                         function swapTeacher(slotIdx, room) {
-                            // Find another room to swap with
-                            const otherRooms = ['301', '305', 'G01B'].filter(r => r !== room);
-                            const swapWith = otherRooms[Math.floor(Math.random() * otherRooms.length)];
-                            
-                            const t1 = dates[slotIdx].teachers.find(t => t.room === room);
-                            const t2 = dates[slotIdx].teachers.find(t => t.room === swapWith);
-                            
-                            if (t1 && t2) {
-                                [t1.teacher, t2.teacher] = [t2.teacher, t1.teacher];
+                            // Click first teacher
+                            if (selectedSlot === null) {
+                                selectedSlot = slotIdx;
+                                selectedRoom = room;
+                                alert('已選擇 ' + dates[slotIdx].teachers.find(t => t.room === room).teacher + '，請點擊另一位老師交換');
                                 renderTable();
+                                return;
                             }
+                            
+                            // Click second teacher - swap
+                            const t1 = dates[selectedSlot].teachers.find(t => t.room === selectedRoom);
+                            const t2 = dates[slotIdx].teachers.find(t => t.room === room);
+                            
+                            if (t1 && t2 && (selectedSlot !== slotIdx || selectedRoom !== room)) {
+                                [t1.teacher, t2.teacher] = [t2.teacher, t1.teacher];
+                                alert('已交換：' + t1.teacher + ' ↔ ' + t2.teacher);
+                            }
+                            
+                            selectedSlot = null;
+                            selectedRoom = null;
+                            renderTable();
                         }
                         
                         function validateChanges() {
@@ -905,18 +918,31 @@ function restoreDefault(el) {
                             document.getElementById('tableBody').innerHTML = html;
                         }
                         
+                        let selectedSlot = null;
+                        let selectedRoom = null;
+                        
                         function swapTeacher(slotIdx, room) {
-                            // Find another room to swap with
-                            const otherRooms = ['301', '305', 'G01B'].filter(r => r !== room);
-                            const swapWith = otherRooms[Math.floor(Math.random() * otherRooms.length)];
-                            
-                            const t1 = dates[slotIdx].teachers.find(t => t.room === room);
-                            const t2 = dates[slotIdx].teachers.find(t => t.room === swapWith);
-                            
-                            if (t1 && t2) {
-                                [t1.teacher, t2.teacher] = [t2.teacher, t1.teacher];
+                            // Click first teacher
+                            if (selectedSlot === null) {
+                                selectedSlot = slotIdx;
+                                selectedRoom = room;
+                                alert('已選擇 ' + dates[slotIdx].teachers.find(t => t.room === room).teacher + '，請點擊另一位老師交換');
                                 renderTable();
+                                return;
                             }
+                            
+                            // Click second teacher - swap
+                            const t1 = dates[selectedSlot].teachers.find(t => t.room === selectedRoom);
+                            const t2 = dates[slotIdx].teachers.find(t => t.room === room);
+                            
+                            if (t1 && t2 && (selectedSlot !== slotIdx || selectedRoom !== room)) {
+                                [t1.teacher, t2.teacher] = [t2.teacher, t1.teacher];
+                                alert('已交換：' + t1.teacher + ' ↔ ' + t2.teacher);
+                            }
+                            
+                            selectedSlot = null;
+                            selectedRoom = null;
+                            renderTable();
                         }
                         
                         function validateChanges() {
