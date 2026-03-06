@@ -147,6 +147,13 @@
             </div>
             
             <div class="input-group">
+                <label>豁免老師名單 (每行一個名稱，例如：張老師)</label>
+                <textarea id="exemptTeachers" placeholder="張老師
+李老師
+..."></textarea>
+            </div>
+            
+            <div class="input-group">
                 <label>當值日期 (由Excel Column A貼上)</label>
 <textarea id="rawDates" placeholder="2026-03-16	1
 2026-03-17	2
@@ -259,8 +266,15 @@
                 return;
             }
             
+            // Parse exempt teachers
+            const rawExempt = document.getElementById('exemptTeachers').value.trim();
+            const exemptList = rawExempt ? rawExempt.split('\n').map(n => n.trim()).filter(n => n) : [];
+            
+            // Filter out exempt teachers
+            teachers = teachers.filter(t => !exemptList.includes(t.name));
+            
             if (teachers.length === 0) {
-                alert('搵唔到老師數據！請貼上正確格式');
+                alert('所有老師都豁免咗！');
                 return;
             }
             
