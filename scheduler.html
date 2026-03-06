@@ -375,7 +375,7 @@
                     // 搵可以做既老師
                     let available = teachers.filter(t => {
                         if (usedToday.includes(t.name)) return false;  // 呢日用咗
-                        if (t.assignedCount >= 2) return false;       // 超過2次
+                        if (t.assignedCount >= 3) return false;       // 超過3次
                         if (t.cannot.includes(dayNum)) return false;  // 唔可以做呢日
                         return true;
                     });
