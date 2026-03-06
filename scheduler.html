@@ -264,18 +264,11 @@
                 };
             });
 
-            // 解析日期數據（改為：日期, Day編號）
+            // 解析日期數據（每個日期一行，系統自動分配3間房）
             const datesText = document.getElementById('datesInput').value.trim();
             const dates = datesText.split('\n').filter(line => line.trim()).map(line => {
                 const [date, day] = line.split(',').map(s => s.trim());
-                return { date, day: parseInt(day), rooms: [], teachers: [] };
-            });
-
-            // 按Day分組
-            const daysMap = {};
-            dates.forEach(d => {
-                if (!daysMap[d.day]) daysMap[d.day] = [];
-                daysMap[d.day].push(d);
+                return { date, day: parseInt(day), teachers: [] };
             });
 
             // 解析偏好
@@ -311,34 +304,25 @@
             // 房間優先順序
             const roomPriority = ['301', '305', 'G01B'];
 
-            // 編排演算法 - 每日3位老師
-            Object.keys(daysMap).forEach(dayNum => {
-                const daySlots = daysMap[dayNum];
-                const dayNumInt = parseInt(dayNum);
-                
-                // 呢日已經assign咗既老師
+            // 編排演算法 - 每個日期3位老師
+            dates.forEach(slot => {
+                const dayNum = slot.day;
                 const usedToday = [];
                 
                 // 每間房分配一個老師
-                roomPriority.forEach((room, idx) => {
-                    // 呢間房呢日既slot
-                    const slot = daySlots[idx];
-                    if (!slot) return;
-                    
-                    slot.room = room;
-                    
-                    // 搵可以做既老師（唔係呢日用過 + 符合偏好 + 未夠次數）
+                roomPriority.forEach(room => {
+                    // 搵可以做既老師
                     let available = teachers.filter(t => {
-                        if (usedToday.includes(t.name)) return false;
-                        if (t.assignedCount >= 2) return false;
-                        if (t.cannot.includes(dayNumInt)) return false;
+                        if (usedToday.includes(t.name)) return false;  // 呢日用咗
+                        if (t.assignedCount >= 2) return false;       // 超過2次
+                        if (t.cannot.includes(dayNum)) return false;  // 唔可以做呢日
                         return true;
                     });
 
-                    // 排序：prefer > 上學期次數少 > 呢日未做過
+                    // 排序：prefer > 上學期次數少
                     available.sort((a, b) => {
-                        const aPrefers = a.prefer.includes(dayNumInt) ? 0 : 1;
-                        const bPrefers = b.prefer.includes(dayNumInt) ? 0 : 1;
+                        const aPrefers = a.prefer.includes(dayNum) ? 0 : 1;
+                        const bPrefers = b.prefer.includes(dayNum) ? 0 : 1;
                         if (aPrefers !== bPrefers) return aPrefers - bPrefers;
                         return a.prevCount - b.prevCount;
                     });
@@ -346,12 +330,12 @@
                     // 揀老師
                     if (available.length > 0) {
                         const selected = available[0];
-                        slot.teacher = selected.name;
+                        slot.teachers.push({ room: room, teacher: selected.name });
                         selected.assignedCount++;
                         selected.assignments.push(slot.date);
                         usedToday.push(selected.name);
                     } else {
-                        slot.teacher = '（待安排）';
+                        slot.teachers.push({ room: room, teacher: '（待安排）' });
                     }
                 });
             });
@@ -364,26 +348,35 @@
             const tbody = document.getElementById('scheduleBody');
             tbody.innerHTML = '';
 
+            // 每個日期顯示3行（301, 305, G01B）
             dates.forEach(slot => {
-                let roomClass = '';
-                if (slot.room === '301') roomClass = 'room-301';
-                else if (slot.room === '305') roomClass = 'room-305';
-                else roomClass = 'room-g01b';
+                slot.teachers.forEach((t, idx) => {
+                    let roomClass = '';
+                    if (t.room === '301') roomClass = 'room-301';
+                    else if (t.room === '305') roomClass = 'room-305';
+                    else roomClass = 'room-g01b';
 
-                tbody.innerHTML += `
-                    <tr class="${roomClass}">
-                        <td>${slot.date}</td>
-                        <td>Day ${slot.day}</td>
-                        <td>${slot.room}</td>
-                        <td>${slot.teacher}</td>
-                        <td>${slot.teacher === '（待安排）' ? '⚠️' : ''}</td>
-                    </tr>
-                `;
+                    tbody.innerHTML += `
+                        <tr class="${roomClass}">
+                            <td>${idx === 0 ? slot.date : ''}</td>
+                            <td>${idx === 0 ? 'Day ' + slot.day : ''}</td>
+                            <td>${t.room}</td>
+                            <td>${t.teacher}</td>
+                            <td>${t.teacher === '（待安排）' ? '⚠️' : ''}</td>
+                        </tr>
+                    `;
+                });
             });
 
-            // Summary
-            const totalDuties = dates.filter(d => d.teacher !== '（待安排）').length;
-            const unassigned = dates.filter(d => d.teacher === '（待安排）').length;
+            // Summary - 計算實際老師數
+            const totalAssignments = dates.reduce((sum, slot) => {
+                return sum + slot.teachers.filter(t => t.teacher !== '（待安排）').length;
+            }, 0);
+            
+            const unassignedCount = dates.reduce((sum, slot) => {
+                return sum + slot.teachers.filter(t => t.teacher === '（待安排）').length;
+            }, 0);
+            
             const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
 
             document.getElementById('summary').innerHTML = `
@@ -392,11 +385,11 @@
                     <div class="label">總當值日數</div>
                 </div>
                 <div class="summary-card">
-                    <div class="num">${totalDuties}</div>
-                    <div class="label">已編排</div>
+                    <div class="num">${totalAssignments}</div>
+                    <div class="label">已編排老師</div>
                 </div>
                 <div class="summary-card">
-                    <div class="num">${unassigned}</div>
+                    <div class="num">${unassignedCount}</div>
                     <div class="label">未編排</div>
                 </div>
                 <div class="summary-card">
