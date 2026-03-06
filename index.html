@@ -467,6 +467,13 @@
             });
             
              displayResults();
+            // Also alert the results
+            let resultText = '已生成 ' + dates.length + ' 日\n\n';
+            dates.forEach(d => {
+                resultText += d.date + ' Day' + d.day + ': ';
+                resultText += d.teachers.map(t => t.room + '=' + t.teacher).join(', ') + '\n';
+            });
+            alert(resultText);
             
             // Validate conditions
             validateConditions();
