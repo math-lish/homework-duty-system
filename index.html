@@ -321,6 +321,11 @@
         function generateSchedule() {
             const roomPriority = ['301', '305', 'G01B'];
             
+            // Initialize room counts for each teacher
+            teachers.forEach(t => {
+                t.roomCounts = { '301': 0, '305': 0, 'G01B': 0 };
+            });
+            
             // First pass: assign teachers who need specific rooms (those with 3 duties need 301,305,G01B each once)
             // Calculate expected duties for each teacher based on term1+term2 counts
             teachers.forEach(t => {
