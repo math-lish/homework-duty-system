@@ -121,7 +121,8 @@
             
             <div class="input-group">
                 <label>老師數據 (格式：老師ID, 301次數, 305次數, G01A次數, 總次數)</label>
-                <textarea id="rawTeachers" placeholder="例如：
+                <textarea id="rawTeachers" placeholder="陳大明,2,0,0,2
+李四海,1,1,0,2
 陳大明,2,0,0,2
 李四海,1,1,0,2
 ..."></textarea>
@@ -129,7 +130,8 @@
             
             <div class="input-group">
                 <label>當值日期 (由Excel Column A貼上)</label>
-                <textarea id="rawDates" placeholder="例如：
+                <textarea id="rawDates" placeholder="陳大明,2,0,0,2
+李四海,1,1,0,2
 2025/9/10	3	24	（舊數據）
 2026/3/16	1	（第三學期開始）"></textarea>
             </div>
@@ -162,83 +164,38 @@
         function loadFromSheet() {
             // Process teachers from raw input
             const rawTeachers = document.getElementById('rawTeachers').value.trim();
+            const rawDates = document.getElementById('rawDates').value.trim();
             if (!rawTeachers) {
                 alert('請貼上老師數據！');
                 return;
             }
             
-            // Parse teacher data - look for the term 2 data (columns I-M)
-            // Format: 老師ID\t第一學期\t第二學期\t第三學期\t總計
-            const teacherCounts = {};
-            const lines = rawTeachers.split('\n');
-            
-            for (let line of lines) {
-                // Skip empty lines
-                if (!line.trim()) continue;
-                
-                // Split by tab or multiple spaces
-                const parts = line.split(/[\t,\s]+/).filter(p => p);
-                if (parts.length < 2) continue;
-                
-                // Try to find teacher ID and term 2 count
-                // Looking at the data: row number = teacher ID, columns after are counts
-                // For term 2, it's column M (4th column after ID)
-                // Or we can use column I (1st data column) which seems to be term 1
-                
-                // The format seems to be: 列號,第一列data,第二列data,...
-                // Let's use the last column as term 2 or the one labeled
-                
-                // Simple approach: use the 4th number as term 2 count
-                const nums = parts.map(p => parseInt(p.replace(/[^0-9]/g, ''))).filter(n => !isNaN(n));
-                if (nums.length >= 2) {
-                    const teacherId = nums[0];
-                    // The 4th number seems to be term 2
-                    const term2Count = nums.length >= 5 ? nums[4] : (nums.length >= 2 ? nums[1] : 0);
-                    if (teacherId && teacherId > 0 && teacherId <= 61) {
-                        teacherCounts[teacherId] = term2Count || 0;
-                    }
-                }
-            }
-            
-            // Filter exempt teachers (3,5,12,18,22,42,44,51)
-            const exempt = {3:1, 5:1, 12:1, 18:1, 22:1, 42:1, 44:1, 51:1};
-            
+            // Parse: Name, count1, count2, count3, total
             teachers = [];
-            for (let id in teacherCounts) {
-                if (!exempt[id]) {
-                    teachers.push({
-                        name: name,
-                        prevCount: teacherCounts[name],
-                        assignedCount: 0,
-                        id: parseInt(id)
-                    });
+            
+            rawTeachers.split('\n').forEach(l => {
+                if (!l.trim()) return;
+                const parts = l.split(',');
+                if (parts.length >= 2) {
+                    const name = parts[0].trim();
+                    const total = parseInt(parts[parts.length-1].trim()) || 0;
+                    if (name) teachers.push({name: name, prevCount: total, assignedCount: 0});
                 }
-            }
+            });
             
             // Sort by duty count ascending
             teachers.sort((a, b) => a.prevCount - b.prevCount);
             
-            // Process dates - just extract 2026 dates from input
-            const rawDates = document.getElementById('rawDates').value.trim();
             dates = [];
-            
-            if (rawDates) {
-                const lines = rawDates.split('\n');
-                for (let line of lines) {
-                    if (!line.trim()) continue;
-                    
-                    // Format: Date, Day (e.g., "2026-03-16, 1" or "2026/3/16,1")
-                    const match = line.match(/(2026[/-]\d+[/-]\d+)/);
-                    if (match) {
-                        // Extract day number - look for number 1-5 after date
-                        const nums = line.match(/\d+/g); const dayNum = nums && nums.length > 1 ? parseInt(nums[1]) : 1;
-                        const dayNum = dayMatch ? parseInt(dayMatch[1]) : 1;
-                        
-                        const dateStr = match[1].replace(/\//g, '-');
-                        dates.push({ date: dateStr, day: dayNum, teachers: [] });
-                    }
+            rawDates.split('\n').forEach(l => {
+                if (!l.trim()) return;
+                const m = l.match(/(2026[/-]\d+[/-]\d+)/);
+                if (m) {
+                    const nums = l.match(/\d+/g);
+                    const day = nums && nums[1] ? parseInt(nums[1]) : 1;
+                    dates.push({date: m[1].replace(/\//g,'-'), day: day, teachers: []});
                 }
-            }
+            });
             
             if (dates.length === 0) {
                 alert('搵唔到日期！請確保貼上2026年既日期');
