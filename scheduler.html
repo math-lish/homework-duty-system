@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欠交功課當值表格 - 自動編排系統</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, "PingFang HK", "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        header {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        header h1 { color: #1e3c72; margin-bottom: 5px; }
+        header p { color: #666; }
+        
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .section h2 { color: #1e3c72; margin-bottom: 20px; }
+        
+        /* Input Area */
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 8px; }
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        
+        textarea { min-height: 150px; }
+        
+        button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary { background: #1e3c72; color: white; }
+        .btn-primary:hover { background: #2a5298; transform: translateY(-2px); }
+        
+        .btn-secondary { background: #4CAF50; color: white; }
+        .btn-secondary:hover { background: #45a049; }
+        
+        /* Results Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th { background: #1e3c72; color: white; }
+        
+        tr:nth-child(even) { background: #f8f9fa; }
+        
+        .room-301 { background: #e3f2fd !important; }
+        .room-305 { background: #fff3e0 !important; }
+        .room-g01b { background: #e8f5e9 !important; }
+        
+        /* Summary */
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .summary-card .num { font-size: 2rem; font-weight: bold; color: #1e3c72; }
+        .summary-card .label { color: #666; font-size: 0.9rem; }
+        
+        /* Print Button */
+        .print-area { display: none; }
+        @media print {
+            body { background: white; }
+            .no-print { display: none; }
+            .print-area { display: block; }
+            .section { box-shadow: none; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 欠交功課當值表格 - 自動編排系統</h1>
+            <p>中華聖潔會靈風中學 | 第二學期</p>
+        </header>
+        
+        <!-- Input Section -->
+        <div class="section no-print">
+            <h2>📝 輸入資料</h2>
+            
+            <div class="input-group">
+                <label>選擇學期</label>
+                <select id="termSelect">
+                    <option value="1">第一學期</option>
+                    <option value="2" selected>第二學期</option>
+                    <option value="3">第三學期</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label>老師名單（每行一個，格式：姓名, 上學期當值次數）</label>
+                <textarea id="teachersInput" placeholder="例如：
+陳老師, 2
+李老師, 1
+張老師, 3"></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>當值日期（每行一個，格式：日期, Day編號, 房間編號）</label>
+                <textarea id="datesInput" placeholder="例如：
+2026-01-15, 1, 301
+2026-01-16, 2, 301
+2026-01-19, 1, 305
+2026-01-20, 2, 305
+2026-01-21, 3, 301
+2026-01-22, 4, 301
+2026-01-23, 5, 305
+2026-02-10, 1, 301
+2026-02-11, 2, 301
+2026-02-12, 3, 305
+2026-02-13, 4, 305
+2026-02-24, 1, 301
+2026-02-25, 2, 301
+2026-02-26, 3, 305"></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>老師偏好（可選，格式：姓名, prefer_days, must_not_days, cannot_days）</label>
+                <textarea id="preferencesInput" placeholder="例如：
+陳老師, 1|3, 5, 2|4
+李老師, 2, 1|3, 
+張老師, , 5, 1|2|3|4|5"></textarea>
+            </div>
+            
+            <button class="btn-primary" onclick="generateSchedule()">🔄 生成編排</button>
+            <button class="btn-secondary" onclick="printSchedule()">🖨️ 列印表格</button>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="section" id="resultsSection" style="display: none;">
+            <h2>📊 編排結果</h2>
+            
+            <div class="summary" id="summary"></div>
+            
+            <table id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>Day</th>
+                        <th>房間</th>
+                        <th>當值老師</th>
+                        <th>備註</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody"></tbody>
+            </table>
+        </div>
+        
+        <!-- Print Area -->
+        <div class="print-area">
+            <h2>📋 欠交功課當值表 - 第二學期</h2>
+            <div id="printContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 預設數據（第二學期 - 到3月中考試完）
+        const defaultTeachers = `陳美玲, 2
+林志偉, 1
+黃小明, 3
+李曉華, 2
+陳大文, 1
+張小萍, 2
+劉偉明, 3
+陳曉敏, 1
+黃志強, 2
+李美珍, 1
+林小明, 2
+張麗娟, 3
+陳國樑, 1
+黃秀英, 2
+李偉倫, 1`;
+
+        const defaultDates = `2026-01-15, 1, 301
+2026-01-16, 2, 301
+2026-01-19, 1, 305
+2026-01-20, 2, 305
+2026-01-21, 3, 301
+2026-01-22, 4, 301
+2026-01-23, 5, 305
+2026-01-26, 1, 301
+2026-01-27, 2, 301
+2026-01-28, 3, 305
+2026-01-29, 4, 305
+2026-01-30, 5, 301
+2026-02-03, 1, 301
+2026-02-04, 2, 305
+2026-02-05, 3, 305
+2026-02-06, 4, 301
+2026-02-09, 1, 305
+2026-02-10, 2, 301
+2026-02-11, 3, 305
+2026-02-12, 4, 301
+2026-02-13, 5, 305
+2026-02-24, 1, 301
+2026-02-25, 2, 301
+2026-02-26, 3, 305
+2026-02-27, 4, 305`;
+
+        // 初始化
+        document.getElementById('teachersInput').value = defaultTeachers;
+        document.getElementById('datesInput').value = defaultDates;
+
+        function generateSchedule() {
+            // 解析老師數據
+            const teachersText = document.getElementById('teachersInput').value.trim();
+            const teachers = teachersText.split('\n').filter(line => line.trim()).map(line => {
+                const [name, prevCount] = line.split(',').map(s => s.trim());
+                return {
+                    name: name,
+                    prevCount: parseInt(prevCount) || 0,
+                    assignedCount: 0,
+                    assignments: []
+                };
+            });
+
+            // 解析日期數據
+            const datesText = document.getElementById('datesInput').value.trim();
+            const dates = datesText.split('\n').filter(line => line.trim()).map(line => {
+                const [date, day, room] = line.split(',').map(s => s.trim());
+                return { date, day, room, teacher: null };
+            });
+
+            // 解析偏好
+            const prefText = document.getElementById('preferencesInput').value.trim();
+            const preferences = {};
+            prefText.split('\n').filter(line => line.trim()).forEach(line => {
+                const parts = line.split(',').map(s => s.trim());
+                if (parts[0]) {
+                    preferences[parts[0]] = {
+                        prefer: parts[1] ? parts[1].split('|').map(d => parseInt(d)) : [],
+                        mustNot: parts[2] ? parts[2].split('|').map(d => parseInt(d)) : [],
+                        cannot: parts[3] ? parts[3].split('|').map(d => parseInt(d)) : []
+                    };
+                }
+            });
+
+            // 綁定偏好到老師
+            teachers.forEach(t => {
+                if (preferences[t.name]) {
+                    t.prefer = preferences[t.name].prefer;
+                    t.mustNot = preferences[t.name].mustNot || [];
+                    t.cannot = preferences[t.name].cannot || [];
+                } else {
+                    t.prefer = [];
+                    t.mustNot = [];
+                    t.cannot = [];
+                }
+            });
+
+            // 根據上學期次數排序（少既排先）
+            teachers.sort((a, b) => a.prevCount - b.prevCount);
+
+            // 編排演算法
+            dates.forEach(slot => {
+                const dayNum = parseInt(slot.day);
+                
+                // 找出呢日可以做既老師
+                let available = teachers.filter(t => {
+                    // 每人最多2次/學期
+                    if (t.assignedCount >= 2) return false;
+                    // 避開cannot既days
+                    if (t.cannot.includes(dayNum)) return false;
+                    return true;
+                });
+
+                // 按公平排序（prefer既排先，然後按上學期次數）
+                available.sort((a, b) => {
+                    const aPrefers = a.prefer.includes(dayNum) ? 0 : 1;
+                    const bPrefers = b.prefer.includes(dayNum) ? 0 : 1;
+                    if (aPrefers !== bPrefers) return aPrefers - bPrefers;
+                    return a.prevCount - b.prevCount;
+                });
+
+                // 揀最啱既老師
+                if (available.length > 0) {
+                    const selected = available[0];
+                    slot.teacher = selected.name;
+                    selected.assignedCount++;
+                    selected.assignments.push(slot.date);
+                } else {
+                    slot.teacher = '（待安排）';
+                }
+            });
+
+            // 顯示結果
+            displayResults(teachers, dates);
+        }
+
+        function displayResults(teachers, dates) {
+            const tbody = document.getElementById('scheduleBody');
+            tbody.innerHTML = '';
+
+            dates.forEach(slot => {
+                let roomClass = '';
+                if (slot.room === '301') roomClass = 'room-301';
+                else if (slot.room === '305') roomClass = 'room-305';
+                else roomClass = 'room-g01b';
+
+                tbody.innerHTML += `
+                    <tr class="${roomClass}">
+                        <td>${slot.date}</td>
+                        <td>Day ${slot.day}</td>
+                        <td>${slot.room}</td>
+                        <td>${slot.teacher}</td>
+                        <td>${slot.teacher === '（待安排）' ? '⚠️' : ''}</td>
+                    </tr>
+                `;
+            });
+
+            // Summary
+            const totalDuties = dates.filter(d => d.teacher !== '（待安排）').length;
+            const unassigned = dates.filter(d => d.teacher === '（待安排）').length;
+            const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
+
+            document.getElementById('summary').innerHTML = `
+                <div class="summary-card">
+                    <div class="num">${dates.length}</div>
+                    <div class="label">總當值日數</div>
+                </div>
+                <div class="summary-card">
+                    <div class="num">${totalDuties}</div>
+                    <div class="label">已編排</div>
+                </div>
+                <div class="summary-card">
+                    <div class="num">${unassigned}</div>
+                    <div class="label">未編排</div>
+                </div>
+                <div class="summary-card">
+                    <div class="num">${teachersWithDuty}</div>
+                    <div class="label">參與老師</div>
+                </div>
+            `;
+
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function printSchedule() {
+            window.print();
+        }
+    </script>
+</body>
+</html>
