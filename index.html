@@ -210,25 +210,25 @@
                 const parts = l.includes('\t') ? l.split('\t') : l.split(',');
                 if (parts.length >= 2) {
                     const name = parts[0].trim();
-                    // Format: Name, lastTermCount, beforeLastTermCount
-                    const lastTerm = parseInt(parts[1].trim()) || 0;
-                    const beforeLastTerm = parts.length >= 3 ? (parseInt(parts[2].trim()) || 0) : 0;
-                    const total = lastTerm + beforeLastTerm;
+                    // Format: Name, term1Count, term2Count
+                    const term1 = parseInt(parts[1].trim()) || 0;
+                    const term2 = parts.length >= 3 ? (parseInt(parts[2].trim()) || 0) : 0;
+                    const total = term1 + term2;
                     if (name) teachers.push({
                         name: name, 
                         prevCount: total, 
-                        lastTermCount: lastTerm,
-                        beforeLastTermCount: beforeLastTerm,
+                        term1Count: term1,
+                        term2Count: term2,
                         assignedCount: 0
                     });
                 }
             });
             
-            // Sort: 1) by total count ascending, 2) if same, prioritize those with 0 last term
+            // Sort: 1) by total count ascending, 2) if same total, prioritize term1=0 (previous term had none)
             teachers.sort((a, b) => {
                 if (a.prevCount !== b.prevCount) return a.prevCount - b.prevCount;
-                // Same total - prioritize those with 0 last term
-                return a.lastTermCount - b.lastTermCount;
+                // Same total - prioritize those with 0 in term1 (previous term)
+                return a.term1Count - b.term1Count;
             });
             
             dates = [];
@@ -271,25 +271,32 @@
         function generateSchedule() {
             const roomPriority = ['301', '305', 'G01B'];
             
+            // First pass: assign teachers who need specific rooms (those with 3 duties need 301,305,G01B each once)
+            // Calculate expected duties for each teacher based on term1+term2 counts
+            teachers.forEach(t => {
+                t.expectedTotal = t.prevCount;  // This term they'll do same as previous two terms combined
+                // But we cap at 3 max
+                if (t.expectedTotal > 3) t.expectedTotal = 3;
+            });
+            
             // Generate assignments
             dates.forEach(slot => {
                 const usedToday = [];
                 
-                roomPriority.forEach(room => {
-                    // Find available teacher - prioritize those with fewer total assignments
+                roomPriority.forEach((room, roomIndex) => {
+                    // Find available teacher
                     let available = teachers.filter(t => {
                         if (usedToday.includes(t.name)) return false;
                         if (t.assignedCount >= 3) return false;  // Max 3 per term
                         return true;
                     });
                     
-                    // Sort by current total + prioritize those with 0 last term
+                    // Sort: prioritize by (prevCount + assignedCount), then term1=0
                     available.sort((a, b) => {
                         const totalA = a.prevCount + a.assignedCount;
                         const totalB = b.prevCount + b.assignedCount;
                         if (totalA !== totalB) return totalA - totalB;
-                        // Same total - prioritize zero from last term
-                        return a.lastTermCount - b.lastTermCount;
+                        return a.term1Count - b.term1Count;
                     });
                     
                     if (available.length > 0) {
