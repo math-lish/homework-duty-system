@@ -131,7 +131,7 @@
             </div>
             
             <div class="input-group">
-                <label>老師數據 (格式：老師名稱, 第一學期當值次數, 上第一學期當值次數)</label>
+                <label>老師數據 (格式：老師名稱, 第一學期當值次數, 第二學期當值次數)</label>
 <textarea id="rawTeachers" onclick="clearDefault(this)" onblur="restoreDefault(this)" placeholder="陳大明	2	0	0	2
 李四海	1	1	0	2
 林美娟	2	1	0	3" data-default="陳大明	2	0	0	2
@@ -176,6 +176,18 @@
                 <textarea id="revisionDates" placeholder="2026-05-04,1
 2026-05-05,2
 ..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>絕對優先條件 (格式：老師姓名,Day，例如：陳小明,1 表示陳小明不能Day 1當值)</label>
+                <textarea id="absoluteConditions" placeholder="陳小明,1
+李老師,3"></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>盡量滿足條件 (格式：老師姓名,+Day/-Day，例如：李老師,+1,-5 表示優先Day 1，最後先至Day 5)</label>
+                <textarea id="preferenceConditions" placeholder="李老師,+1,-5
+王老師,+2"></textarea>
             </div>
             
             <div class="input-group">
