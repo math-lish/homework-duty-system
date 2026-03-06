@@ -204,7 +204,14 @@
                 const m = l.match(/(2026[/-]\d+[/-]\d+)/);
                 if (m) {
                     const nums = l.match(/\d+/g);
-                    const day = nums && nums[1] ? parseInt(nums[1]) : 1;
+                    // Get day number - try comma format first (2026-03-16,1), then extract from date
+                    let day = 1;
+                    const commaMatch = l.match(/,\s*(\d+)/);
+                    if (commaMatch) {
+                        day = parseInt(commaMatch[1]);
+                    } else if (nums && nums.length > 0) {
+                        day = parseInt(nums[nums.length - 1]) % 5 || 1;
+                    }
                     dates.push({date: m[1].replace(/\//g,'-'), day: day, teachers: []});
                 }
             });
@@ -231,15 +238,15 @@
                 const usedToday = [];
                 
                 roomPriority.forEach(room => {
-                    // Find available teacher
+                    // Find available teacher - prioritize those with fewer total assignments
                     let available = teachers.filter(t => {
                         if (usedToday.includes(t.name)) return false;
                         if (t.assignedCount >= 3) return false;  // Max 3 per term
                         return true;
                     });
                     
-                    // Sort by previous count (ascending) and prefer less assigned
-                    available.sort((a, b) => a.prevCount - b.prevCount);
+                    // Sort by TOTAL count (prevCount + assignedCount) ascending to distribute evenly
+                    available.sort((a, b) => (a.prevCount + a.assignedCount) - (b.prevCount + b.assignedCount));
                     
                     if (available.length > 0) {
                         const selected = available[0];
