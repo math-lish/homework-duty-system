@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欠交功課當值表格 - 自動編排系統</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, "PingFang HK", "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        header {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        header h1 { color: #1e3c72; margin-bottom: 5px; }
+        
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .section h2 { color: #1e3c72; margin-bottom: 15px; }
+        
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 8px; }
+        
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        textarea::placeholder {
+            color: #999;
+            font-style: italic;
+            opacity: 1;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
+        
+        button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary { background: #1e3c72; color: white; }
+        .btn-primary:hover { background: #2a5298; transform: translateY(-2px); }
+        
+        .btn-secondary { background: #4CAF50; color: white; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; }
+        th { background: #1e3c72; color: white; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        
+        .room-301 { background: #e3f2fd !important; }
+        .room-305 { background: #fff3e0 !important; }
+        .room-g01b { background: #e8f5e9 !important; }
+        
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .summary-card { background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; }
+        .summary-card .num { font-size: 1.8rem; font-weight: bold; color: #1e3c72; }
+        
+        .paste-instructions {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .help-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #333;
+        }
+        
+        @media print {
+            body { background: white; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 欠交功課當值表格 - 自動編排系統</h1>
+            <p>中華聖潔會靈風中學 | 第三學期</p>
+        </header>
+        
+        <div class="section no-print">
+            <h2>📥 貼上Excel數據</h2>
+            
+            <div class="paste-instructions">
+                <strong>使用方法：</strong> 直接由Excel既Sheet3貼上兩樣野：<br>
+                1. 先貼老師數據（第一行唔洗）- 直接貼Column I-M既61行<br>
+                2. 再貼日期數據 - 直接貼Column A既日期<br>
+                <em>（系統會自動識別老師當值次數同日期）</em>
+            </div>
+            
+            <div class="input-group">
+                <label>老師數據 (格式：老師名稱, 第一學期當值次數, 第二學期當值次數)</label>
+<textarea id="rawTeachers" onclick="clearDefault(this)" onblur="restoreDefault(this)" placeholder="陳大明	2	0	0	2
+李四海	1	1	0	2
+林美娟	2	1	0	3" data-default="陳大明	2	0	0	2
+李四海	1	1	0	2
+林美娟	2	1	0	3
+陳曉敏	1	1	0	2
+劉志強	1	1	0	2
+吳美蘭	0	1	0	1
+鄭家偉	1	0	1	2
+孫曉彤	1	0	0	1
+周志明	1	2	0	3
+吳耀祖	0	2	1	3</textarea>
+李四海	1	1	0	2
+林美娟	2	1	0	3">陳大明	2	0	0	2
+李四海	1	1	0	2
+林美娟	2	1	0	3
+陳曉敏,1,1,0,2
+劉志強,1,1,0,2
+吳美蘭,0,1,0,1
+鄭家偉,1,0,1,2
+孫曉彤,1,0,0,1
+周志明,1,2,0,3
+吳耀祖,0,2,1,3</textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>豁免老師名單 (每行一個名稱，例如：張老師)</label>
+                <textarea id="exemptTeachers" placeholder="張老師
+李老師
+..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>初中班主任名單 (溫習週時豁免，每行一個名稱)</label>
+                <textarea id="juniorClassTeachers" placeholder="王老師
+陳老師
+..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>溫習週日期 (格式：日期, Day，例如：2026-05-04,1)</label>
+                <textarea id="revisionDates" placeholder="2026-05-04,1
+2026-05-05,2
+..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>絕對優先條件 (格式：老師姓名,Day，例如：陳小明,1 表示陳小明不能Day 1當值)</label>
+                <textarea id="absoluteConditions" placeholder="陳小明,1
+李老師,3"></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>盡量滿足條件 (格式：老師姓名,+Day/-Day，例如：李老師,+1,-5 表示優先Day 1，最後先至Day 5)</label>
+                <textarea id="preferenceConditions" placeholder="李老師,+1,-5
+王老師,+2"></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>當值日期 (由Excel Column A貼上)</label>
+<textarea id="rawDates" onclick="clearDefault(this)" onblur="restoreDefault(this)" placeholder="2026-03-16	1
+2026-03-17	2
+2026-03-18	3">2026-03-16	1
+2026-03-17	2
+2026-03-18	3
+2026-03-19	4
+2026-03-23	1
+2026-03-24	2
+2026-03-25	3</textarea>
+2026-03-17,2
+2026-03-18,3">2026-03-16	1
+2026-03-17	2
+2026-03-18	3
+2026-03-19,4
+2026-03-23,1
+2026-03-24,2
+2026-03-25,3</textarea>
+            </div>
+            
+            <button class="btn-primary" onclick="try { loadFromSheet(); } catch(e) { console.log(e); } try { displayResults(); } catch(e) { console.log(e); }">🔄 處理數據並生成編排</button>
+            
+        </div>
+        
+        <div class="section" id="resultsSection" style="display: none;">
+            <h2>📊 編排結果</h2>
+            <div class="summary" id="summary"></div>
+            <table id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>Day</th>
+                        <th>房間</th>
+                        <th>當值老師</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        let teachers = [];
+        let dates = [];
+        
+        function loadFromSheet() {
+            // Clear previous results
+            // Clear and hide will be handled when regenerating
+            // Process teachers from raw input
+            const rawTeachers = document.getElementById('rawTeachers').value.trim();
+            const rawDates = document.getElementById('rawDates').value.trim();
+            if (!rawTeachers) {
+                alert('請貼上老師數據！');
+                return;
+            }
+            
+            // Parse: Name, count1, count2, count3, total
+            teachers = [];
+            
+            rawTeachers.split('\n').forEach(l => {
+                if (!l.trim()) return;
+                // Handle both comma and tab (Excel paste) separated
+                const parts = l.includes('\t') ? l.split('\t') : l.split(',');
+                if (parts.length >= 2) {
+                    const name = parts[0].trim();
+                    // Format: Name, term1Count, term2Count
+                    const term1 = parseInt(parts[1].trim()) || 0;
+                    const term2 = parts.length >= 3 ? (parseInt(parts[2].trim()) || 0) : 0;
+                    const total = term1 + term2;
+                    if (name) teachers.push({
+                        name: name, 
+                        prevCount: total, 
+                        term1Count: term1,
+                        term2Count: term2,
+                        assignedCount: 0
+                    });
+                }
+            });
+            
+            // Sort: 1) by total count ascending, 2) if same total, prioritize term1=0 (previous term had none)
+            teachers.sort((a, b) => {
+                if (a.prevCount !== b.prevCount) return a.prevCount - b.prevCount;
+                // Same total - prioritize those with 0 in term1 (previous term)
+                return a.term1Count - b.term1Count;
+            });
+            
+            dates = [];
+            rawDates.split('\n').forEach(l => {
+                if (!l.trim()) return;
+                const m = l.replace(/\t/g,' ').match(/(202[56][/-]\d+[/-]\d+)/);
+                if (m) {
+                    const nums = l.replace(/\t/g,' ').match(/\d+/g);
+                    // Get day number - handle tab (Excel paste) or comma or just space
+                    let day = 1;
+                    // Try to find a number after the date - check tab, comma, or space
+                    const dateMatch = l.match(/(202[56][/-]\d+[/-]\d+)/);
+                    if (dateMatch) {
+                        // Get the part after the date
+                        const afterDate = l.substring(l.indexOf(dateMatch[1]) + dateMatch[1].length);
+                        // Extract first number found
+                        const numMatch = afterDate.match(/(\d+)/);
+                        if (numMatch) {
+                            day = parseInt(numMatch[1]);
+                        }
+                    }
+                    dates.push({date: m[1].replace(/\//g,'-'), day: day, teachers: []});
+                }
+            });
+            
+            if (dates.length === 0) {
+                alert('搵唔到日期！請確保貼上2026年既日期');
+                return;
+            }
+            
+            // Parse exempt teachers
+            const rawExempt = document.getElementById('exemptTeachers').value.trim();
+            const exemptList = rawExempt ? rawExempt.split('\n').map(n => n.trim()).filter(n => n) : [];
+            
+            // Parse absolute conditions (teacher cannot work on these days)
+            const rawAbsolute = document.getElementById('absoluteConditions').value.trim();
+            const absoluteConditions = {};
+            if (rawAbsolute) {
+                rawAbsolute.split('\n').forEach(l => {
+                    const parts = l.includes(',') ? l.split(',') : l.split('\t');
+                    if (parts.length >= 2) {
+                        const name = parts[0].trim();
+                        const day = parseInt(parts[1].trim());
+                        if (name && day) {
+                            if (!absoluteConditions[name]) absoluteConditions[name] = [];
+                            absoluteConditions[name].push(day);
+                        }
+                    }
+                });
+            }
+            window.absoluteConditions = absoluteConditions;
+            
+            // Parse preference conditions (teacher prefers/avoids certain days)
+            const rawPrefs = document.getElementById('preferenceConditions').value.trim();
+            const preferenceConditions = {};
+            if (rawPrefs) {
+                rawPrefs.split('\n').forEach(l => {
+                    const parts = l.split(',');
+                    if (parts.length >= 2) {
+                        const name = parts[0].trim();
+                        const pref = { prefer: [], avoid: [] };
+                        for (let i = 1; i < parts.length; i++) {
+                            const p = parts[i].trim();
+                            if (p.startsWith('+')) {
+                                pref.prefer.push(parseInt(p.substring(1)));
+                            } else if (p.startsWith('-')) {
+                                pref.avoid.push(parseInt(p.substring(1)));
+                            }
+                        }
+                        if (name) preferenceConditions[name] = pref;
+                    }
+                });
+            }
+            window.preferenceConditions = preferenceConditions;
+            
+            // Parse junior class teachers
+            const rawJunior = document.getElementById('juniorClassTeachers').value.trim();
+            const juniorList = rawJunior ? rawJunior.split('\n').map(n => n.trim()).filter(n => n) : [];
+            
+            // Filter out exempt teachers
+            teachers = teachers.filter(t => !exemptList.includes(t.name));
+            
+            // Store for revision week handling
+            window.juniorClassTeachers = juniorList;
+            
+            // Get revision week dates
+            const rawRevision = document.getElementById('revisionDates').value.trim();
+            window.revisionDates = rawRevision ? rawRevision.split('\n').map(d => d.trim()).filter(d => d) : [];
+            
+            if (teachers.length === 0) {
+                alert('所有老師都豁免咗！');
+                return;
+            }
+            
+            // Generate schedule
+            generateSchedule();
+        }
+        
+        function generateSchedule() {
+            const roomPriority = ['301', '305', 'G01B'];
+            
+            // Initialize room counts for each teacher
+            teachers.forEach(t => {
+                t.roomCounts = { '301': 0, '305': 0, 'G01B': 0 };
+            });
+            
+            // First pass: assign teachers who need specific rooms (those with 3 duties need 301,305,G01B each once)
+            // Calculate expected duties for each teacher based on term1+term2 counts
+            teachers.forEach(t => {
+                t.expectedTotal = t.prevCount;  // This term they'll do same as previous two terms combined
+                // But we cap at 3 max
+                if (t.expectedTotal > 3) t.expectedTotal = 3;
+            });
+            
+            // Generate assignments
+            dates.forEach(slot => {
+                const usedToday = [];
+                
+                roomPriority.forEach((room, roomIndex) => {
+                    // Find available teacher
+                    let available = teachers.filter(t => {
+                        if (usedToday.includes(t.name)) return false;
+                        if (t.assignedCount >= 3) return false;  // Max 3 per term
+                        return true;
+                    });
+                    
+                    // Sort by total + term2=0 priority + room distribution + conditions
+                    available.sort((a, b) => {
+                        const totalA = a.prevCount + a.assignedCount;
+                        const totalB = b.prevCount + b.assignedCount;
+                        
+                        // Priority 2: Term2 = 0 first
+                        if (a.term2Count !== b.term2Count) {
+                            if (a.term2Count === 0) return -1;
+                            if (b.term2Count === 0) return 1;
+                        }
+                        
+                        // Priority 6: If has 2 duties and got 301, must get G01B
+                        if (room === 'G01B') {
+                            const aHas2Duties = (a.prevCount + a.assignedCount) === 1;
+                            const bHas2Duties = (b.prevCount + b.assignedCount) === 1;
+                            const aHad301 = a.roomCounts['301'] > 0;
+                            const bHad301 = b.roomCounts['301'] > 0;
+                            if (aHas2Duties && aHad301 && !bHas2Duties) return -1;
+                            if (bHas2Duties && bHad301 && !aHas2Duties) return 1;
+                        }
+                        
+                        // Priority 7: For Day 1's 305, after 301 done, those with 3 duties get priority
+                        if (room === '305' && slot.day === 1) {
+                            const aTotal3 = (a.prevCount + a.assignedCount) >= 2;
+                            const bTotal3 = (b.prevCount + b.assignedCount) >= 2;
+                            if (aTotal3 && !bTotal3) return -1;
+                            if (bTotal3 && !aTotal3) return 1;
+                        }
+                        
+                        // Otherwise sort by total count
+                        if (totalA !== totalB) return totalA - totalB;
+                        
+                        // Preference conditions
+                        const prefs = window.preferenceConditions || {};
+                        if (prefs[a.name] && prefs[b.name]) {
+                            const aPref = prefs[a.name];
+                            const bPref = prefs[b.name];
+                            // Prefer matching day
+                            const aMatch = aPref.prefer.includes(slot.day);
+                            const bMatch = bPref.prefer.includes(slot.day);
+                            if (aMatch && !bMatch) return -1;
+                            if (!aMatch && bMatch) return 1;
+                            // Avoid not matching
+                            const aAvoid = aPref.avoid.includes(slot.day);
+                            const bAvoid = bPref.avoid.includes(slot.day);
+                            if (!aAvoid && bAvoid) return -1;
+                            if (aAvoid && !bAvoid) return 1;
+                        }
+                        
+                        return (a.roomCounts[room] || 0) - (b.roomCounts[room] || 0);
+                    });
+                    
+                    if (available.length > 0) {
+                        const selected = available[0];
+                        slot.teachers.push({ room: room, teacher: selected.name });
+                        selected.assignedCount++;
+                        selected.roomCounts[room] = (selected.roomCounts[room] || 0) + 1;
+                        usedToday.push(selected.name);
+                    } else {
+                        slot.teachers.push({ room: room, teacher: '（待安排）' });
+                    }
+                });
+            });
+            
+            displayResults();
+            
+            // Validate conditions
+            validateConditions();
+        }
+        
+        function validateConditions() {
+            const absCond = window.absoluteConditions || {};
+            const prefCond = window.preferenceConditions || {};
+            const violations = [];
+            
+            dates.forEach(slot => {
+                slot.teachers.forEach(t => {
+                    const teacher = t.teacher;
+                    if (teacher === '（待安排）') return;
+                    
+                    // Check absolute conditions
+                    if (absCond[teacher] && absCond[teacher].includes(slot.day)) {
+                        violations.push({
+                            teacher: teacher,
+                            day: slot.day,
+                            type: '絕對',
+                            message: `老師 ${teacher} 絕對不能Day ${slot.day}當值，但被編配到 ${slot.date}`
+                        });
+                    }
+                    
+                    // Check preference conditions (violation = got an avoided day)
+                    if (prefCond[teacher] && prefCond[teacher].avoid && prefCond[teacher].avoid.includes(slot.day)) {
+                        violations.push({
+                            teacher: teacher,
+                            day: slot.day,
+                            type: '盡量',
+                            message: `老師 ${teacher} 尽量避免Day ${slot.day}當值，但被編配到 ${slot.date}`
+                        });
+                    }
+                });
+            });
+            
+            // Display violations if any
+            if (violations.length > 0) {
+                let html = '<div style="margin-top:20px;padding:15px;background:#fff3cd;border-radius:10px;">';
+                html += '<h3 style="color:#856404;margin-top:0;">⚠️ 未能完全滿足既條件</h3>';
+                html += '<ul style="color:#856404;">';
+                violations.forEach(v => {
+                    html += `<li>${v.message}</li>`;
+                });
+                html += '</ul></div>';
+                
+                const resultsDiv = document.getElementById('resultsSection');
+                (resultsDiv || {}).innerHTML += html;
+            }
+        }
+        
+        function displayResults() { console.log('displayResults called, dates:', dates?.length);
+            // Build Excel A-E format: Date, Day, 301, 305, G01B
+            let html1 = '<table id="excelTable" style="width:100%;border-collapse:collapse;"><thead><tr><th style="background:#1e3c72;color:white;padding:8px;">日期</th><th style="background:#1e3c72;color:white;padding:8px;">Day</th><th style="background:#1e3c72;color:white;padding:8px;">301</th><th style="background:#1e3c72;color:white;padding:8px;">305</th><th style="background:#1e3c72;color:white;padding:8px;">G01B</th></tr></thead><tbody>';
+            
+            dates.forEach(slot => {
+                const t301 = slot.teachers.find(t => t.room === '301');
+                const t305 = slot.teachers.find(t => t.room === '305');
+                const tg01b = slot.teachers.find(t => t.room === 'G01B');
+                html1 += '<tr><td style="padding:6px;border:1px solid #eee;">' + slot.date + '</td><td style="padding:6px;border:1px solid #eee;text-align:center;">' + slot.day + '</td><td style="padding:6px;border:1px solid #eee;text-align:center;">' + (t301 ? t301.teacher.replace('老師','') : '') + '</td><td style="padding:6px;border:1px solid #eee;text-align:center;">' + (t305 ? t305.teacher.replace('老師','') : '') + '</td><td style="padding:6px;border:1px solid #eee;text-align:center;">' + (tg01b ? tg01b.teacher.replace('老師','') : '') + '</td></tr>';
+            });
+            html1 += '</tbody></table>';
+
+            // Format 2: Room as columns (already implemented)
+            let html2 = '<h3>第二款：課室在頂</h3>...'; // Simplified for now
+            
+            (document.getElementById('scheduleBody') || {}).innerHTML = html1;
+            
+            const totalAssignments = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher !== '（待安排）').length, 0);
+            const unassigned = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher === '（待安排）').length, 0);
+            const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
+            
+            (document.getElementById('summary') || {}).innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + unassigned + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button>';
+            
+            // Show the results section
+            const rs = document.getElementById('resultsSection');
+            if (rs) { rs.style.display = 'block'; }
+        }
+        
+        function printSchedule() {
+            window.print();
+        }
+    
+        function copyExcel() {
+            const table = document.getElementById('excelTable');
+            let text = '';
+            for (let row of table.rows) {
+                let rowText = [];
+                for (let cell of row.cells) {
+                    rowText.push(cell.innerText);
+                }
+                text += rowText.join('\t') + '\n';
+            }
+            navigator.clipboard.writeText(text);
+            alert('已複製到剪貼簿！');
+        }
+        
+        function copyWord() {
+            // Build Word format: Room as rows
+            let text = '';
+            const rooms = {'301':[],'305':[],'G01B':[]};
+            const allDates = [...new Set(dates.map(d => d.date))];
+            dates.forEach(s => {s.teachers.forEach(t => {rooms[t.room].push({date:s.date,teacher:t.teacher})})});
+            // Header
+            text = '地點\t' + allDates.join('\t') + '\n';
+            ['301','305','G01B'].forEach(r => {
+                text += r + '\t';
+                text += allDates.map(d => {
+                    const a = rooms[r].find(x => x.date === d);
+                    return a ? a.teacher.replace('老師','') : '';
+                }).join('\t');
+                text += '\n';
+            });
+            navigator.clipboard.writeText(text);
+            alert('已複製Word格式！');
+        }
+</script>
+<script>
+function clearDefault(el) {
+    if (el.dataset.cleared !== 'true') {
+        el.value = '';
+        el.style.color = '#000';
+        el.dataset.cleared = 'true';
+    }
+}
+function restoreDefault(el) {
+    if (el.value === '') {
+        el.value = el.dataset.default || '';
+        el.style.color = '#999';
+        el.dataset.cleared = 'false';
+    }
+}
+</script>
+</body>
+</html>
