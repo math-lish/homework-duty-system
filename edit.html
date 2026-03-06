@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>手動調整當值表</title>
+    <style>
+        body { font-family: -apple-system, "PingFang HK", "Microsoft JhengHei", sans-serif; padding: 20px; background: #f5f5f5; }
+        h2 { color: #1e3c72; }
+        .info { background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #1e3c72; color: white; }
+        .teacher { cursor: pointer; background: #e3f2fd; padding: 5px 10px; border-radius: 4px; display: inline-block; margin: 2px; }
+        .teacher:hover { background: #bbdefb; }
+        .btn { padding: 10px 20px; margin: 5px; cursor: pointer; border-radius: 6px; border: none; font-size: 14px; }
+        .btn-validate { background: #2196F3; color: white; }
+        .btn-save { background: #4CAF50; color: white; }
+        .btn-cancel { background: #f44336; color: white; }
+        .violation { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .success { background: #d4edda; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .buttons { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h2>📋 手動調整當值表</h2>
+    <div class="info">
+        <strong>使用方法：</strong> 點擊第一個老師，再點擊第二個老師，即可交換位置。
+    </div>
+    
+    <div class="buttons">
+        <button class="btn btn-validate" onclick="validateChanges()">檢查違反</button>
+        <button class="btn btn-save" onclick="saveChanges()">儲存並關閉</button>
+        <button class="btn btn-cancel" onclick="window.close()">取消關閉</button>
+    </div>
+    
+    <div id="violations"></div>
+    
+    <table id="scheduleTable">
+        <thead>
+            <tr><th>日期</th><th>Day</th><th>301</th><th>305</th><th>G01B</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+    
+    <script>
+        let dates = JSON.parse(localStorage.getItem('editDates') || '[]');
+        let originalSchedule = JSON.parse(JSON.stringify(dates));
+        
+        function renderTable() {
+            let html = '';
+            dates.forEach((slot, slotIdx) => {
+                html += '<tr>';
+                html += '<td>' + slot.date + '</td>';
+                html += '<td>' + slot.day + '</td>';
+                slot.teachers.forEach((t, tIdx) => {
+                    const room = t.room;
+                    html += '<td><span class="teacher" onclick="selectTeacher(' + slotIdx + ', \'' + room + '\')">' + t.teacher + '</span></td>';
+                });
+                html += '</tr>';
+            });
+            document.getElementById('tableBody').innerHTML = html;
+        }
+        
+        let selectedSlot = null;
+        let selectedRoom = null;
+        
+        function selectTeacher(slotIdx, room) {
+            if (selectedSlot === null) {
+                selectedSlot = slotIdx;
+                selectedRoom = room;
+                alert('已選擇 ' + dates[slotIdx].teachers.find(t => t.room === room).teacher + '，請點擊另一位老師交換');
+                renderTable();
+                return;
+            }
+            
+            const t1 = dates[selectedSlot].teachers.find(t => t.room === selectedRoom);
+            const t2 = dates[slotIdx].teachers.find(t => t.room === room);
+            
+            if (t1 && t2) {
+                [t1.teacher, t2.teacher] = [t2.teacher, t1.teacher];
+                alert('已交換：' + t1.teacher + ' ↔ ' + t2.teacher);
+            }
+            
+            selectedSlot = null;
+            selectedRoom = null;
+            renderTable();
+        }
+        
+        function validateChanges() {
+            const absCond = JSON.parse(localStorage.getItem('absoluteConditions') || '{}');
+            let violations = [];
+            let warnings = [];
+            
+            const teacherCounts = {};
+            const roomCounts = {};
+            
+            dates.forEach(slot => {
+                slot.teachers.forEach(t => {
+                    if (t.teacher === '（待安排）') return;
+                    
+                    // Rule 1: Max 3
+                    if (!teacherCounts[t.teacher]) teacherCounts[t.teacher] = 0;
+                    teacherCounts[t.teacher]++;
+                    
+                    // Rule 4: Same room twice
+                    const key = t.room + '_' + t.teacher;
+                    roomCounts[key] = (roomCounts[key] || 0) + 1;
+                    
+                    // Rule 7: Absolute conditions
+                    if (absCond[t.teacher] && absCond[t.teacher].includes(parseInt(slot.day))) {
+                        violations.push('❌ ' + t.teacher + ' 絕對不能Day ' + slot.day);
+                    }
+                });
+            });
+            
+            Object.keys(teacherCounts).forEach(t => {
+                if (teacherCounts[t] > 3) warnings.push('⚠️ Rule 1: ' + t + ' 超過3節');
+            });
+            
+            Object.keys(roomCounts).forEach(key => {
+                if (roomCounts[key] > 1) warnings.push('⚠️ Rule 4: ' + key.split('_')[1] + ' 同一房間多次');
+            });
+            
+            const div = document.getElementById('violations');
+            let html = '';
+            if (violations.length > 0) html += '<div class="violation"><strong>❌ 違反條件：</strong><ul>' + violations.map(v => '<li>' + v + '</li>').join('') + '</ul></div>';
+            if (warnings.length > 0) html += '<div class="violation"><strong>⚠️ 編排問題：</strong><ul>' + warnings.map(w => '<li>' + w + '</li>').join('') + '</ul></div>';
+            if (violations.length === 0 && warnings.length === 0) html += '<div class="success"><strong>✅ 符合全部7條規則</strong></div>';
+            div.innerHTML = html;
+        }
+        
+        function saveChanges() {
+            localStorage.setItem('editDates', JSON.stringify(dates));
+            alert('已儲存！');
+            window.close();
+        }
+        
+        renderTable();
+    </script>
+</body>
+</html>
