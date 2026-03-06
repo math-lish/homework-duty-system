@@ -122,9 +122,8 @@
             <div class="input-group">
                 <label>老師數據 (格式：老師ID, 301次數, 305次數, G01A次數, 總次數)</label>
                 <textarea id="rawTeachers" placeholder="例如：
-李老師,2,0,0,2
-陳老師,2,0,0,2
-張老師,0,0,0,0
+陳大明,2,0,0,2
+李四海,1,1,0,2
 ..."></textarea>
             </div>
             
@@ -208,8 +207,8 @@
             for (let id in teacherCounts) {
                 if (!exempt[id]) {
                     teachers.push({
-                        name: '老師' + id.padStart(2, '0'),
-                        prevCount: teacherCounts[id],
+                        name: name,
+                        prevCount: teacherCounts[name],
                         assignedCount: 0,
                         id: parseInt(id)
                     });
