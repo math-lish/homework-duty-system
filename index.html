@@ -233,6 +233,40 @@
     </div>
     
     <script>
+        let editMode = false;
+        let savedResults = [];
+        
+        function enterEditMode() {
+            editMode = true;
+            savedResults = JSON.parse(JSON.stringify(dates));
+            displayResults();
+            alert('手動調整模式：點擊老師名稱可交換位置，完成後點擊「儲存」或「取消」');
+        }
+        
+        function exitEditMode(save) {
+            if (!save) dates = JSON.parse(JSON.stringify(savedResults));
+            editMode = false;
+            displayResults();
+            if (save) validateConditions();
+        }
+        
+        function swapTeachers(slotIdx, room1, room2) {
+            if (!editMode) return;
+            const slot = dates[slotIdx];
+            const t1 = slot.teachers.find(t => t.room === room1);
+            const t2 = slot.teachers.find(t => t.room === room2);
+            if (t1 && t2 && t1.teacher !== '（待安排）' && t2.teacher !== '（待安排）') {
+                [t1.teacher, t2.teacher] = [t2.teacher, t1.teacher];
+                displayResults();
+            }
+        }
+        
+        function showVertical() {
+            currentFormat = 'vertical';
+            displayResults();
+        }
+        
+        <script>
         let teachers = [];
         let dates = [];
         
@@ -584,6 +618,40 @@
         }
 </script>
 <script>
+        let editMode = false;
+        let savedResults = [];
+        
+        function enterEditMode() {
+            editMode = true;
+            savedResults = JSON.parse(JSON.stringify(dates));
+            displayResults();
+            alert('手動調整模式：點擊老師名稱可交換位置，完成後點擊「儲存」或「取消」');
+        }
+        
+        function exitEditMode(save) {
+            if (!save) dates = JSON.parse(JSON.stringify(savedResults));
+            editMode = false;
+            displayResults();
+            if (save) validateConditions();
+        }
+        
+        function swapTeachers(slotIdx, room1, room2) {
+            if (!editMode) return;
+            const slot = dates[slotIdx];
+            const t1 = slot.teachers.find(t => t.room === room1);
+            const t2 = slot.teachers.find(t => t.room === room2);
+            if (t1 && t2 && t1.teacher !== '（待安排）' && t2.teacher !== '（待安排）') {
+                [t1.teacher, t2.teacher] = [t2.teacher, t1.teacher];
+                displayResults();
+            }
+        }
+        
+        function showVertical() {
+            currentFormat = 'vertical';
+            displayResults();
+        }
+        
+        <script>
 function clearDefault(el) {
     if (el.dataset.cleared !== 'true') {
         el.value = '';
