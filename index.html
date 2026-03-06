@@ -485,7 +485,7 @@
                             teacher: teacher,
                             day: slot.day,
                             type: '絕對',
-                            message: `老師 ${teacher} 絕對不能Day ${slot.day}當值`
+                            message: `老師 ${teacher} 絕對不能Day ${slot.day}當值，但被編配到 ${slot.date}`
                         });
                     }
                     
@@ -495,7 +495,7 @@
                             teacher: teacher,
                             day: slot.day,
                             type: '盡量',
-                            message: `老師 ${teacher} 尽量避免Day ${slot.day}當值`
+                            message: `老師 ${teacher} 尽量避免Day ${slot.day}當值，但被編配到 ${slot.date}`
                         });
                     }
                 });
