@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>當值表</title>
+    <style>
+        body { font-family: -apple-system, "PingFang HK", sans-serif; padding: 20px; background: #f5f5f5; }
+        h2 { color: #1e3c72; }
+        textarea { width: 100%; height: 300px; padding: 10px; font-size: 14px; }
+        .btn { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h2>📋 當值表 - 複製結果</h2>
+    <p>呢度可以獨立複製當值表結果</p>
+    <textarea id="output" placeholder="貼上你既當值表結果..."></textarea>
+    <button class="btn" onclick="copyOutput()">複製全部</button>
+    <button class="btn" onclick="window.print()" style="background:#2196F3;">打印</button>
+    <script>
+        function copyOutput() {
+            navigator.clipboard.writeText(document.getElementById('output').value);
+            alert('已複製！');
+        }
+    </script>
+</body>
+</html>
