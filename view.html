@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>當值表</title>
+    <style>
+        body { font-family: -apple-system, "PingFang HK", sans-serif; padding: 20px; background: #f5f5f5; }
+        h2 { color: #1e3c72; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #1e3c72; color: white; }
+        .btn { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; margin: 10px 5px; }
+    </style>
+</head>
+<body>
+    <h2>📋 當值編排結果</h2>
+    <button class="btn" onclick="copyAll()">複製全部</button>
+    <table id="table">
+        <thead><tr><th>日期</th><th>Day</th><th>301</th><th>305</th><th>G01B</th></tr></thead>
+        <tbody></tbody>
+    </table>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const data = JSON.parse(decodeURIComponent(params.get("data") || "{}"));
+        
+        let html = "";
+        data.dates?.forEach(d => {
+            const t301 = d.teachers.find(t => t.room === "301");
+            const t305 = d.teachers.find(t => t.room === "305");
+            const tg01b = d.teachers.find(t => t.room === "G01B");
+            html += "<tr><td>" + d.date + "</td><td>" + d.day + "</td><td>" + (t301?.teacher||"") + "</td><td>" + (t305?.teacher||"") + "</td><td>" + (tg01b?.teacher||"") + "</td></tr>";
+        });
+        document.querySelector("tbody").innerHTML = html;
+        
+        function copyAll() {
+            let text = "日期\tDay\t301\t305\tG01B\n";
+            data.dates?.forEach(d => {
+                const t301 = d.teachers.find(t => t.room === "301")?.teacher||"";
+                const t305 = d.teachers.find(t => t.room === "305")?.teacher||"";
+                const tg01b = d.teachers.find(t => t.room === "G01B")?.teacher||"";
+                text += d.date + "\t" + d.day + "\t" + t301 + "\t" + t305 + "\t" + tg01b + "\n";
+            });
+            navigator.clipboard.writeText(text);
+            alert("已複製！");
+        }
+    </script>
+</body>
+</html>
