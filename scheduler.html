@@ -136,7 +136,7 @@
 2026/3/16	1	（第三學期開始）"></textarea>
             </div>
             
-            <button class="btn-primary" onclick="processAndGenerate()">🔄 處理數據並生成編排</button>
+            <button class="btn-primary" onclick="loadFromSheet()">🔄 處理數據並生成編排</button>
             <button class="btn-secondary" onclick="printSchedule()">🖨️ 列印表格</button>
         </div>
         
@@ -161,7 +161,7 @@
         let teachers = [];
         let dates = [];
         
-        function processAndGenerate() {
+        function loadFromSheet() {
             // Process teachers from raw input
             const rawTeachers = document.getElementById('rawTeachers').value.trim();
             if (!rawTeachers) {
