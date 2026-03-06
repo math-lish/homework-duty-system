@@ -464,6 +464,56 @@
             });
             
             displayResults();
+            
+            // Validate conditions
+            validateConditions();
+        }
+        
+        function validateConditions() {
+            const absCond = window.absoluteConditions || {};
+            const prefCond = window.preferenceConditions || {};
+            const violations = [];
+            
+            dates.forEach(slot => {
+                slot.teachers.forEach(t => {
+                    const teacher = t.teacher;
+                    if (teacher === '（待安排）') return;
+                    
+                    // Check absolute conditions
+                    if (absCond[teacher] && absCond[teacher].includes(slot.day)) {
+                        violations.push({
+                            teacher: teacher,
+                            day: slot.day,
+                            type: '絕對',
+                            message: `老師 ${teacher} 絕對不能Day ${slot.day}當值`
+                        });
+                    }
+                    
+                    // Check preference conditions (violation = got an avoided day)
+                    if (prefCond[teacher] && prefCond[teacher].avoid && prefCond[teacher].avoid.includes(slot.day)) {
+                        violations.push({
+                            teacher: teacher,
+                            day: slot.day,
+                            type: '盡量',
+                            message: `老師 ${teacher} 尽量避免Day ${slot.day}當值`
+                        });
+                    }
+                });
+            });
+            
+            // Display violations if any
+            if (violations.length > 0) {
+                let html = '<div style="margin-top:20px;padding:15px;background:#fff3cd;border-radius:10px;">';
+                html += '<h3 style="color:#856404;margin-top:0;">⚠️ 未能完全滿足既條件</h3>';
+                html += '<ul style="color:#856404;">';
+                violations.forEach(v => {
+                    html += `<li>${v.message}</li>`;
+                });
+                html += '</ul></div>';
+                
+                const resultsDiv = document.getElementById('resultsSection');
+                resultsDiv.innerHTML += html;
+            }
         }
         
         function displayResults() {
