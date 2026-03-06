@@ -2,23 +2,50 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>當值表</title>
+    <title>手動輸入當值表</title>
     <style>
         body { font-family: -apple-system, "PingFang HK", sans-serif; padding: 20px; background: #f5f5f5; }
         h2 { color: #1e3c72; }
-        textarea { width: 100%; height: 300px; padding: 10px; font-size: 14px; }
+        textarea { width: 100%; height: 200px; padding: 10px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #1e3c72; color: white; }
         .btn { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; margin: 5px; }
     </style>
 </head>
 <body>
-    <h2>📋 當值表 - 複製結果</h2>
-    <p>呢度可以獨立複製當值表結果</p>
-    <textarea id="output" placeholder="貼上你既當值表結果..."></textarea>
-    <button class="btn" onclick="copyOutput()">複製全部</button>
-    <button class="btn" onclick="window.print()" style="background:#2196F3;">打印</button>
+    <h2>📋 手動輸入當值表</h2>
+    <p>貼上直表格式既當值表（從Excel直接copy）：</p>
+    <textarea id="input" placeholder="日期	Day	301	305	G01B
+2026-03-16	1	陳大明	李四海	林美娟"></textarea>
+    <br>
+    <button class="btn" onclick="showTable()">顯示表格</button>
+    <button class="btn" onclick="copyTable()" style="background:#2196F3;">複製表格</button>
+    
+    <div id="output"></div>
+    
     <script>
-        function copyOutput() {
-            navigator.clipboard.writeText(document.getElementById('output').value);
+        function showTable() {
+            const lines = document.getElementById('input').value.trim().split('\n');
+            let html = '<table><thead><tr><th>日期</th><th>Day</th><th>301</th><th>305</th><th>G01B</th></tr></thead><tbody>';
+            
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                const cols = line.split('\t');
+                if (cols.length >= 3) {
+                    html += '<tr>';
+                    cols.forEach(col => {
+                        html += '<td>' + col.trim() + '</td>';
+                    });
+                    html += '</tr>';
+                }
+            });
+            html += '</tbody></table>';
+            document.getElementById('output').innerHTML = html;
+        }
+        
+        function copyTable() {
+            navigator.clipboard.writeText(document.getElementById('input').value);
             alert('已複製！');
         }
     </script>

@@ -116,7 +116,7 @@
 <body>
     <div class="container">
         <header>
-        <button onclick="window.open('manual.html','_blank')" style="padding:8px 16px;background:#9C27B0;color:white;border:none;border-radius:6px;cursor:pointer;float:right;">手動輸入</button>
+        
             <h1>📋 欠交功課當值表格 - 自動編排系統</h1>
             <p>中華聖潔會靈風中學 | 第三學期</p>
         </header>
@@ -540,11 +540,14 @@
             const unassigned = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher === '（待安排）').length, 0);
             const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
             
-            (document.getElementById('summary') || {}).innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + unassigned + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button>';
+            (document.getElementById('summary') || {}).innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + (exemptTeachers || 0) + '</div><div class="label">豁免老師</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">編排老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button>';
             
             // Show the results section
             const rs = document.getElementById('resultsSection');
-            if (rs) { rs.style.display = 'block'; }
+            if (rs) { 
+                rs.style.display = 'block'; 
+                rs.innerHTML += '<div style="margin-top:20px;padding:15px;background:#fff3cd;border-radius:10px;"><h3 style="margin-top:0;">📋 編排準則</h3><ul style="font-size:14px;"><li>每老師最多3節</li><li>Term2=0優先編排</li><li>總次數少優先</li><li>3次老師均勻分配房間</li><li>避免同一房間多次</li><li>Day 1的305位給3次老師</li></ul></div>';
+            }
         }
         
         function printSchedule() {
