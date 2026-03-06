@@ -295,6 +295,47 @@
             const rawExempt = document.getElementById('exemptTeachers').value.trim();
             const exemptList = rawExempt ? rawExempt.split('\n').map(n => n.trim()).filter(n => n) : [];
             
+            // Parse absolute conditions (teacher cannot work on these days)
+            const rawAbsolute = document.getElementById('absoluteConditions').value.trim();
+            const absoluteConditions = {};
+            if (rawAbsolute) {
+                rawAbsolute.split('\n').forEach(l => {
+                    const parts = l.includes(',') ? l.split(',') : l.split('\t');
+                    if (parts.length >= 2) {
+                        const name = parts[0].trim();
+                        const day = parseInt(parts[1].trim());
+                        if (name && day) {
+                            if (!absoluteConditions[name]) absoluteConditions[name] = [];
+                            absoluteConditions[name].push(day);
+                        }
+                    }
+                });
+            }
+            window.absoluteConditions = absoluteConditions;
+            
+            // Parse preference conditions (teacher prefers/avoids certain days)
+            const rawPrefs = document.getElementById('preferenceConditions').value.trim();
+            const preferenceConditions = {};
+            if (rawPrefs) {
+                rawPrefs.split('\n').forEach(l => {
+                    const parts = l.split(',');
+                    if (parts.length >= 2) {
+                        const name = parts[0].trim();
+                        const pref = { prefer: [], avoid: [] };
+                        for (let i = 1; i < parts.length; i++) {
+                            const p = parts[i].trim();
+                            if (p.startsWith('+')) {
+                                pref.prefer.push(parseInt(p.substring(1)));
+                            } else if (p.startsWith('-')) {
+                                pref.avoid.push(parseInt(p.substring(1)));
+                            }
+                        }
+                        if (name) preferenceConditions[name] = pref;
+                    }
+                });
+            }
+            window.preferenceConditions = preferenceConditions;
+            
             // Parse junior class teachers
             const rawJunior = document.getElementById('juniorClassTeachers').value.trim();
             const juniorList = rawJunior ? rawJunior.split('\n').map(n => n.trim()).filter(n => n) : [];
@@ -346,12 +387,55 @@
                         return true;
                     });
                     
-                    // Sort by total + term1=0 priority + room distribution
+                    // Sort by total + term2=0 priority + room distribution + conditions
                     available.sort((a, b) => {
                         const totalA = a.prevCount + a.assignedCount;
                         const totalB = b.prevCount + b.assignedCount;
+                        
+                        // Priority 2: Term2 = 0 first
+                        if (a.term2Count !== b.term2Count) {
+                            if (a.term2Count === 0) return -1;
+                            if (b.term2Count === 0) return 1;
+                        }
+                        
+                        // Priority 6: If has 2 duties and got 301, must get G01B
+                        if (room === 'G01B') {
+                            const aHas2Duties = (a.prevCount + a.assignedCount) === 1;
+                            const bHas2Duties = (b.prevCount + b.assignedCount) === 1;
+                            const aHad301 = a.roomCounts['301'] > 0;
+                            const bHad301 = b.roomCounts['301'] > 0;
+                            if (aHas2Duties && aHad301 && !bHas2Duties) return -1;
+                            if (bHas2Duties && bHad301 && !aHas2Duties) return 1;
+                        }
+                        
+                        // Priority 7: For Day 1's 305, after 301 done, those with 3 duties get priority
+                        if (room === '305' && slot.day === 1) {
+                            const aTotal3 = (a.prevCount + a.assignedCount) >= 2;
+                            const bTotal3 = (b.prevCount + b.assignedCount) >= 2;
+                            if (aTotal3 && !bTotal3) return -1;
+                            if (bTotal3 && !aTotal3) return 1;
+                        }
+                        
+                        // Otherwise sort by total count
                         if (totalA !== totalB) return totalA - totalB;
-                        if (a.term1Count !== b.term1Count) return a.term1Count - b.term1Count;
+                        
+                        // Preference conditions
+                        const prefs = window.preferenceConditions || {};
+                        if (prefs[a.name] && prefs[b.name]) {
+                            const aPref = prefs[a.name];
+                            const bPref = prefs[b.name];
+                            // Prefer matching day
+                            const aMatch = aPref.prefer.includes(slot.day);
+                            const bMatch = bPref.prefer.includes(slot.day);
+                            if (aMatch && !bMatch) return -1;
+                            if (!aMatch && bMatch) return 1;
+                            // Avoid not matching
+                            const aAvoid = aPref.avoid.includes(slot.day);
+                            const bAvoid = bPref.avoid.includes(slot.day);
+                            if (!aAvoid && bAvoid) return -1;
+                            if (aAvoid && !bAvoid) return 1;
+                        }
+                        
                         return (a.roomCounts[room] || 0) - (b.roomCounts[room] || 0);
                     });
                     
