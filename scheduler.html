@@ -232,7 +232,7 @@
                     const match = line.match(/(2026[/-]\d+[/-]\d+)/);
                     if (match) {
                         // Extract day number - look for number 1-5 after date
-                        const dayMatch = line.match(/[,\t\s]+(\d)[\s,]/);
+                        const nums = line.match(/\d+/g); const dayNum = nums && nums.length > 1 ? parseInt(nums[1]) : 1;
                         const dayNum = dayMatch ? parseInt(dayMatch[1]) : 1;
                         
                         const dateStr = match[1].replace(/\//g, '-');
@@ -289,7 +289,7 @@
         
         function displayResults() {
             // Build Excel A-E format: Date, Day, 301, 305, G01B
-            let html1 = '<h3>第一款：Excel A-E格式</h3><table style="width:100%;border-collapse:collapse;margin-bottom:30px;"><thead><tr><th style="background:#1e3c72;color:white;padding:8px;">日期</th><th style="background:#1e3c72;color:white;padding:8px;">Day</th><th style="background:#1e3c72;color:white;padding:8px;">301</th><th style="background:#1e3c72;color:white;padding:8px;">305</th><th style="background:#1e3c72;color:white;padding:8px;">G01B</th></tr></thead><tbody>';
+            let html1 = '<table id="excelTable" style="width:100%;border-collapse:collapse;"><thead><tr><th style="background:#1e3c72;color:white;padding:8px;">日期</th><th style="background:#1e3c72;color:white;padding:8px;">Day</th><th style="background:#1e3c72;color:white;padding:8px;">301</th><th style="background:#1e3c72;color:white;padding:8px;">305</th><th style="background:#1e3c72;color:white;padding:8px;">G01B</th></tr></thead><tbody>';
             
             dates.forEach(slot => {
                 const t301 = slot.teachers.find(t => t.room === '301');
@@ -308,7 +308,7 @@
             const unassigned = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher === '（待安排）').length, 0);
             const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
             
-            document.getElementById('summary').innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + unassigned + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div>';
+            document.getElementById('summary').innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + unassigned + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button>';
             
             document.getElementById('resultsSection').style.display = 'block';
         }
@@ -316,6 +316,40 @@
         function printSchedule() {
             window.print();
         }
-    </script>
+    
+        function copyExcel() {
+            const table = document.getElementById('excelTable');
+            let text = '';
+            for (let row of table.rows) {
+                let rowText = [];
+                for (let cell of row.cells) {
+                    rowText.push(cell.innerText);
+                }
+                text += rowText.join('\t') + '\n';
+            }
+            navigator.clipboard.writeText(text);
+            alert('已複製到剪貼簿！');
+        }
+        
+        function copyWord() {
+            // Build Word format: Room as rows
+            let text = '';
+            const rooms = {'301':[],'305':[],'G01B':[]};
+            const allDates = [...new Set(dates.map(d => d.date))];
+            dates.forEach(s => {s.teachers.forEach(t => {rooms[t.room].push({date:s.date,teacher:t.teacher})})});
+            // Header
+            text = '地點\t' + allDates.join('\t') + '\n';
+            ['301','305','G01B'].forEach(r => {
+                text += r + '\t';
+                text += allDates.map(d => {
+                    const a = rooms[r].find(x => x.date === d);
+                    return a ? a.teacher.replace('老師','') : '';
+                }).join('\t');
+                text += '\n';
+            });
+            navigator.clipboard.writeText(text);
+            alert('已複製Word格式！');
+        }
+</script>
 </body>
 </html>
