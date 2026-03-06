@@ -116,7 +116,6 @@
 <body>
     <div class="container">
         <header>
-        
             <h1>📋 欠交功課當值表格 - 自動編排系統</h1>
             <p>中華聖潔會靈風中學 | 第三學期</p>
         </header>
@@ -540,16 +539,11 @@
             const unassigned = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher === '（待安排）').length, 0);
             const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
             
-            (document.getElementById('summary') || {}).innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + 0 + '</div><div class="label">豁免老師</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">編排老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版</button>
-            <button onclick="window.open('manual.html','_blank')" style="padding:10px 20px;background:#9C27B0;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">手動輸入</button>
-            <button onclick="window.open('manual.html','_blank')" style="padding:10px 20px;background:#9C27B0;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">手動輸入</button>';
+            (document.getElementById('summary') || {}).innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + unassigned + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button>';
             
             // Show the results section
             const rs = document.getElementById('resultsSection');
-            if (rs) { 
-                rs.style.display = 'block'; 
-                rs.innerHTML += '';
-            }
+            if (rs) { rs.style.display = 'block'; }
         }
         
         function printSchedule() {
