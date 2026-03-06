@@ -243,11 +243,39 @@
             alert('手動調整模式：點擊老師名稱可交換位置，完成後點擊「儲存」或「取消」');
         }
         
-        function exitEditMode(save) {
-            if (!save) dates = JSON.parse(JSON.stringify(savedResults));
-            editMode = false;
+        function enterEditMode() {
+            editMode = true;
+            savedResults = JSON.parse(JSON.stringify(dates));
+            document.getElementById('editBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'inline-block';
+            document.getElementById('confirmBtn').style.display = 'inline-block';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
             displayResults();
-            if (save) validateConditions();
+            alert('手動調整模式：點擊老師名稱可交換位置');
+        }
+        
+        function saveEdit() {
+            // Save current changes and check violations
+            validateConditions();
+        }
+        
+        function confirmEdit() {
+            editMode = false;
+            document.getElementById('editBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            alert('已儲存更改！');
+        }
+        
+        function cancelEdit() {
+            dates = JSON.parse(JSON.stringify(savedResults));
+            editMode = false;
+            document.getElementById('editBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            displayResults();
         }
         
         function swapTeachers(slotIdx, room1, room2) {
@@ -628,11 +656,39 @@
             alert('手動調整模式：點擊老師名稱可交換位置，完成後點擊「儲存」或「取消」');
         }
         
-        function exitEditMode(save) {
-            if (!save) dates = JSON.parse(JSON.stringify(savedResults));
-            editMode = false;
+        function enterEditMode() {
+            editMode = true;
+            savedResults = JSON.parse(JSON.stringify(dates));
+            document.getElementById('editBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'inline-block';
+            document.getElementById('confirmBtn').style.display = 'inline-block';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
             displayResults();
-            if (save) validateConditions();
+            alert('手動調整模式：點擊老師名稱可交換位置');
+        }
+        
+        function saveEdit() {
+            // Save current changes and check violations
+            validateConditions();
+        }
+        
+        function confirmEdit() {
+            editMode = false;
+            document.getElementById('editBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            alert('已儲存更改！');
+        }
+        
+        function cancelEdit() {
+            dates = JSON.parse(JSON.stringify(savedResults));
+            editMode = false;
+            document.getElementById('editBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            displayResults();
         }
         
         function swapTeachers(slotIdx, room1, room2) {
