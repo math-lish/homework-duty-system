@@ -980,59 +980,76 @@ function restoreDefault(el) {
                         
                         function validateChanges() {
                             const absCond = window.absoluteConditions || {};
+                            const prefCond = window.preferenceConditions || {};
                             let violations = [];
                             let warnings = [];
                             
-                            // Check absolute conditions
+                            // Rule 7: Absolute conditions
                             dates.forEach(slot => {
                                 slot.teachers.forEach(t => {
                                     const teacher = t.teacher;
                                     if (teacher === '（待安排）') return;
                                     if (absCond[teacher] && absCond[teacher].includes(parseInt(slot.day))) {
-                                        violations.push('❌ ' + teacher + ' 絕對不能Day ' + slot.day + ' 當值，但被編配到 ' + slot.date);
+                                        violations.push('❌ Rule 7: ' + teacher + ' 絕對不能Day ' + slot.day + ' 當值');
                                     }
                                 });
                             });
                             
-                            // Check scheduling rules
+                            // Count duties
                             const teacherCounts = {};
                             const roomCounts = {};
+                            const day1Teachers = [];
+                            
                             dates.forEach(slot => {
                                 slot.teachers.forEach(t => {
-                                    if (t.teacher === '（）待安排') return;
+                                    if (t.teacher === '（待安排）') return;
+                                    
+                                    // Rule 1: Max 3
                                     if (!teacherCounts[t.teacher]) teacherCounts[t.teacher] = 0;
                                     teacherCounts[t.teacher]++;
+                                    
+                                    // Rule 4: Room distribution
                                     const key = t.room + '_' + t.teacher;
                                     roomCounts[key] = (roomCounts[key] || 0) + 1;
+                                    
+                                    // Rule 6: Day 1 305
+                                    if (slot.day === 1 && t.room === '305') {
+                                        day1Teachers.push(t.teacher);
+                                    }
                                 });
                             });
                             
                             // Check rules
                             Object.keys(teacherCounts).forEach(teacher => {
-                                if (teacherCounts[teacher] > 3) {
-                                    warnings.push('⚠️ ' + teacher + ' 超過3節');
-                                }
-                                Object.keys(roomCounts).forEach(key => {
-                                    if (key.includes(teacher) && roomCounts[key] > 1) {
-                                        warnings.push('⚠️ ' + teacher + ' 同一個房間 ' + key.split('_')[0] + ' 超過1次');
+                                if (teacherCounts[teacher] > 3) warnings.push('⚠️ Rule 1: ' + teacher + ' 超過3節');
+                            });
+                            
+                            Object.keys(roomCounts).forEach(key => {
+                                if (roomCounts[key] > 1) warnings.push('⚠️ Rule 4: ' + key.split('_')[1] + ' 同一房間' + key.split('_')[0] + '多於1次');
+                            });
+                            
+                            // Rule 6: Day 1 305
+                            day1Teachers.forEach(teacher => {
+                                if (teacherCounts[teacher] < 3) warnings.push('⚠️ Rule 6: Day 1 305應優先3節老師');
+                            });
+                            
+                            // Rule 7: Preference
+                            dates.forEach(slot => {
+                                slot.teachers.forEach(t => {
+                                    if (t.teacher === '（待安排）' || !prefCond[t.teacher]) return;
+                                    if (prefCond[t.teacher].avoid && prefCond[t.teacher].avoid.includes(slot.day)) {
+                                        warnings.push('⚠️ Rule 7: ' + t.teacher + ' 盡量避免Day ' + slot.day);
                                     }
                                 });
                             });
                             
                             const div = document.getElementById('violations');
                             let html = '';
-                            if (violations.length > 0) {
-                                html += '<div class="violation"><strong>❌ 違反絕對優先條件：</strong><ul>' + violations.map(v => '<li>' + v + '</li>').join('') + '</ul></div>';
-                            }
-                            if (warnings.length > 0) {
-                                html += '<div class="violation"><strong>⚠️ 可能問題（編排邏輯）：</strong><ul>' + warnings.map(w => '<li>' + w + '</li>').join('') + '</ul></div>';
-                            }
-                            if (violations.length === 0 && warnings.length === 0) {
-                                html += '<div class="violation" style="background:#d4edda;"><strong>✅ 沒有違反條件</strong></div>';
-                            }
+                            if (violations.length > 0) html += '<div class="violation"><strong>❌ 違反條件：</strong><ul>' + violations.map(v => '<li>' + v + '</li>').join('') + '</ul></div>';
+                            if (warnings.length > 0) html += '<div class="violation"><strong>⚠️ 編排問題：</strong><ul>' + warnings.map(w => '<li>' + w + '</li>').join('') + '</ul></div>';
+                            if (violations.length === 0 && warnings.length === 0) html += '<div class="violation" style="background:#d4edda;"><strong>✅ 符合全部7條規則</strong></div>';
                             div.innerHTML = html;
                         }
-                        
                         function saveChanges() {
                             validateChanges();
                             // Copy back to parent window
