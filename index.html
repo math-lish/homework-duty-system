@@ -120,7 +120,7 @@
             </div>
             
             <div class="input-group">
-                <label>老師數據 (格式：老師ID, 301次數, 305次數, G01A次數, 總次數)</label>
+                <label>老師數據 (格式：老師名稱, 上學期當值次數, 上上學期當值次數)</label>
 <textarea id="rawTeachers" placeholder="陳大明	2	0	0	2
 李四海	1	1	0	2
 林美娟	2	1	0	3">陳大明	2	0	0	2
@@ -144,6 +144,32 @@
 孫曉彤,1,0,0,1
 周志明,1,2,0,3
 吳耀祖,0,2,1,3</textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>豁免老師名單 (每行一個名稱，例如：張老師)</label>
+                <textarea id="exemptTeachers" placeholder="張老師
+李老師
+..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>初中班主任名單 (溫習週時豁免，每行一個名稱)</label>
+                <textarea id="juniorClassTeachers" placeholder="王老師
+陳老師
+..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label>溫習週日期 (每行一個日期，例如：2026-05-04)</label>
+                <textarea id="revisionDates" placeholder="2026-05-04
+2026-05-05
+..."></textarea>
+            </div>
+            
+            <textarea id="exemptTeachers" placeholder="張老師
+李老師
+..."></textarea>
             </div>
             
             <div class="input-group">
@@ -210,13 +236,26 @@
                 const parts = l.includes('\t') ? l.split('\t') : l.split(',');
                 if (parts.length >= 2) {
                     const name = parts[0].trim();
-                    const total = parseInt(parts[parts.length-1].trim()) || 0;
-                    if (name) teachers.push({name: name, prevCount: total, assignedCount: 0});
+                    // Format: Name, term1Count, term2Count
+                    const term1 = parseInt(parts[1].trim()) || 0;
+                    const term2 = parts.length >= 3 ? (parseInt(parts[2].trim()) || 0) : 0;
+                    const total = term1 + term2;
+                    if (name) teachers.push({
+                        name: name, 
+                        prevCount: total, 
+                        term1Count: term1,
+                        term2Count: term2,
+                        assignedCount: 0
+                    });
                 }
             });
             
-            // Sort by duty count ascending
-            teachers.sort((a, b) => a.prevCount - b.prevCount);
+            // Sort: 1) by total count ascending, 2) if same total, prioritize term1=0 (previous term had none)
+            teachers.sort((a, b) => {
+                if (a.prevCount !== b.prevCount) return a.prevCount - b.prevCount;
+                // Same total - prioritize those with 0 in term1 (previous term)
+                return a.term1Count - b.term1Count;
+            });
             
             dates = [];
             rawDates.split('\n').forEach(l => {
@@ -237,8 +276,7 @@
                             day = parseInt(numMatch[1]);
                         }
                     }
-                    const isRevision = l.includes('溫習');
-                dates.push({date: m[1].replace(/\//g,'-'), day: day, teachers: [], isRevision: isRevision});
+                    dates.push({date: m[1].replace(/\//g,'-'), day: day, teachers: []});
                 }
             });
             
@@ -247,8 +285,26 @@
                 return;
             }
             
+            // Parse exempt teachers
+            const rawExempt = document.getElementById('exemptTeachers').value.trim();
+            const exemptList = rawExempt ? rawExempt.split('\n').map(n => n.trim()).filter(n => n) : [];
+            
+            // Parse junior class teachers
+            const rawJunior = document.getElementById('juniorClassTeachers').value.trim();
+            const juniorList = rawJunior ? rawJunior.split('\n').map(n => n.trim()).filter(n => n) : [];
+            
+            // Filter out exempt teachers
+            teachers = teachers.filter(t => !exemptList.includes(t.name));
+            
+            // Store for revision week handling
+            window.juniorClassTeachers = juniorList;
+            
+            // Get revision week dates
+            const rawRevision = document.getElementById('revisionDates').value.trim();
+            window.revisionDates = rawRevision ? rawRevision.split('\n').map(d => d.trim()).filter(d => d) : [];
+            
             if (teachers.length === 0) {
-                alert('搵唔到老師數據！請貼上正確格式');
+                alert('所有老師都豁免咗！');
                 return;
             }
             
@@ -259,25 +315,38 @@
         function generateSchedule() {
             const roomPriority = ['301', '305', 'G01B'];
             
-            // Track room assignments
+            // First pass: assign teachers who need specific rooms (those with 3 duties need 301,305,G01B each once)
+            // Calculate expected duties for each teacher based on term1+term2 counts
             teachers.forEach(t => {
-                t.roomCounts = { '301': 0, '305': 0, 'G01B': 0 };
+                t.expectedTotal = t.prevCount;  // This term they'll do same as previous two terms combined
+                // But we cap at 3 max
+                if (t.expectedTotal > 3) t.expectedTotal = 3;
             });
             
             // Generate assignments
             dates.forEach(slot => {
                 const usedToday = [];
                 
-                roomPriority.forEach(room => {
-                    // Find available teacher - prioritize those with fewer total assignments
-                    let available = teachers.filter(t => {
-                        if (usedToday.includes(t.name)) return false;
-                        if (t.assignedCount >= 3) return false;  // Max 3 per term
-                        return true;
-                    });
+                roomPriority.forEach((room, roomIndex) => {
+                    // Find available teacher
+                    const juniorList = window.juniorClassTeachers || [];
+                let available = teachers.filter(t => {
+                    if (usedToday.includes(t.name)) return false;
+                    if (t.assignedCount >= 3) return false;
+                    // For revision weeks, exclude junior class teachers
+                    if (isRevision && juniorList.includes(t.name)) return false;
+                    return true;
+                });
                     
-                    // Sort by TOTAL count (prevCount + assignedCount) ascending to distribute evenly
-                    available.sort((a, b) => (a.prevCount + a.assignedCount) - (b.prevCount + b.assignedCount));
+                    // Sort by total + term1=0 priority + room distribution
+                    available.sort((a, b) => {
+                        const totalA = a.prevCount + a.assignedCount;
+                        const totalB = b.prevCount + b.assignedCount;
+                        if (totalA !== totalB) return totalA - totalB;
+                        if (a.term1Count !== b.term1Count) return a.term1Count - b.term1Count;
+                        // Prefer teacher with fewer of this room
+                        return (a.roomCounts[room] || 0) - (b.roomCounts[room] || 0);
+                    });
                     
                     if (available.length > 0) {
                         const selected = available[0];
