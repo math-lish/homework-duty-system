@@ -238,8 +238,8 @@
         
         function loadFromSheet() {
             // Clear previous results
-            const rs = document.getElementById('resultsSection'); if (rs) rs.innerHTML = '';
-            const rs2 = document.getElementById('resultsSection'); if (rs2) rs2.style.display = 'none';
+            document.getElementById('resultsSection').innerHTML = '';
+            document.getElementById('resultsSection').style.display = 'none';
             // Process teachers from raw input
             const rawTeachers = document.getElementById('rawTeachers').value.trim();
             const rawDates = document.getElementById('rawDates').value.trim();
@@ -466,14 +466,7 @@
                 });
             });
             
-             displayResults();
-            // Also alert the results
-            let resultText = '已生成 ' + dates.length + ' 日\n\n';
-            dates.forEach(d => {
-                resultText += d.date + ' Day' + d.day + ': ';
-                resultText += d.teachers.map(t => t.room + '=' + t.teacher).join(', ') + '\n';
-            });
-            alert(resultText);
+            displayResults();
             
             // Validate conditions
             validateConditions();
@@ -522,17 +515,7 @@
                 html += '</ul></div>';
                 
                 const resultsDiv = document.getElementById('resultsSection');
-                // Fallback: if resultsDiv doesn't exist, create it
-            let resultsContainer = document.getElementById('resultsSection');
-            if (!resultsContainer) {
-                resultsContainer = document.createElement('div');
-                resultsContainer.id = 'resultsSection';
-                document.body.appendChild(resultsContainer);
-            }
-            if (resultsContainer) {
-                resultsContainer.innerHTML = '<h2>結果</h2><div class="section">' + html + '</div>';
-                resultsContainer.style.display = 'block';
-            }
+                resultsDiv.innerHTML += html;
             }
         }
         
@@ -551,15 +534,15 @@
             // Format 2: Room as columns (already implemented)
             let html2 = '<h3>第二款：課室在頂</h3>...'; // Simplified for now
             
-            const sb = document.getElementById('scheduleBody'); if (sb) sb.innerHTML = html1;
+            document.getElementById('scheduleBody').innerHTML = html1;
             
             const totalAssignments = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher !== '（待安排）').length, 0);
             const unassigned = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher === '（待安排）').length, 0);
             const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
             
-            const sm = document.getElementById('summary'); if (sm) sm.innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + unassigned + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button>';
+            document.getElementById('summary').innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + unassigned + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button>';
             
-            const rs3 = document.getElementById('resultsSection'); if (rs3) { rs3.style.display = 'block'; rs3.innerHTML = '<h2>結果</h2><p>載入中...</p>'; }
+            document.getElementById('resultsSection').style.display = 'block';
         }
         
         function printSchedule() {
