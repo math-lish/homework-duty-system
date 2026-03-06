@@ -543,10 +543,7 @@
             
             // Show the results section
             const rs = document.getElementById('resultsSection');
-            if (rs) {
-                rs.style.display = 'block';
-                rs.innerHTML = '<div class="section"><h2>編排結果</h2><div id="summary"></div><table id="excelTable" style="width:100%;border-collapse:collapse;"><thead><tr><th style="background:#1e3c72;color:white;padding:8px;">日期</th><th style="background:#1e3c72;color:white;padding:8px;">Day</th><th style="background:#1e3c72;color:white;padding:8px;">301</th><th style="background:#1e3c72;color:white;padding:8px;">305</th><th style="background:#1e3c72;color:white;padding:8px;">G01B</th></tr></thead><tbody id="scheduleBody"></tbody></table></div>';
-            }
+            if (rs) { rs.style.display = 'block'; }
         }
         
         function printSchedule() {
