@@ -542,7 +542,7 @@
             
             (document.getElementById('summary') || {}).innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + unassigned + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button>';
             
-            (document.getElementById('resultsSection') || {}).style.display = 'block';
+            (document.getElementById('resultsSection') || {}).innerHTML = '<div class="section"><h2>編排結果</h2></div>'; (document.getElementById('resultsSection') || {}).style.display = 'block';
         }
         
         function printSchedule() {
