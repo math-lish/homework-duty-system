@@ -27,7 +27,6 @@
         }
         
         header h1 { color: #1e3c72; margin-bottom: 5px; }
-        header p { color: #666; }
         
         .section {
             background: white;
@@ -37,21 +36,20 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.15);
         }
         
-        .section h2 { color: #1e3c72; margin-bottom: 20px; }
+        .section h2 { color: #1e3c72; margin-bottom: 15px; }
         
-        /* Input Area */
         .input-group { margin-bottom: 20px; }
         .input-group label { display: block; font-weight: bold; margin-bottom: 8px; }
-        .input-group input, .input-group textarea, .input-group select {
+        
+        textarea {
             width: 100%;
+            min-height: 120px;
             padding: 12px;
             border: 2px solid #ddd;
             border-radius: 10px;
-            font-size: 1rem;
-            font-family: inherit;
+            font-family: monospace;
+            font-size: 0.9rem;
         }
-        
-        textarea { min-height: 150px; }
         
         button {
             padding: 15px 30px;
@@ -67,54 +65,40 @@
         .btn-primary:hover { background: #2a5298; transform: translateY(-2px); }
         
         .btn-secondary { background: #4CAF50; color: white; }
-        .btn-secondary:hover { background: #45a049; }
         
-        /* Results Table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        
-        th, td {
-            padding: 12px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-        }
-        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; }
         th { background: #1e3c72; color: white; }
-        
         tr:nth-child(even) { background: #f8f9fa; }
         
         .room-301 { background: #e3f2fd !important; }
         .room-305 { background: #fff3e0 !important; }
         .room-g01b { background: #e8f5e9 !important; }
         
-        /* Summary */
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .summary-card { background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; }
+        .summary-card .num { font-size: 1.8rem; font-weight: bold; color: #1e3c72; }
         
-        .summary-card {
-            background: #f8f9fa;
-            padding: 20px;
+        .paste-instructions {
+            background: #fff3e0;
+            padding: 15px;
             border-radius: 10px;
-            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
         }
         
-        .summary-card .num { font-size: 2rem; font-weight: bold; color: #1e3c72; }
-        .summary-card .label { color: #666; font-size: 0.9rem; }
+        .help-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #333;
+        }
         
-        /* Print Button */
-        .print-area { display: none; }
         @media print {
             body { background: white; }
             .no-print { display: none; }
-            .print-area { display: block; }
-            .section { box-shadow: none; padding: 10px; }
         }
     </style>
 </head>
@@ -122,67 +106,43 @@
     <div class="container">
         <header>
             <h1>📋 欠交功課當值表格 - 自動編排系統</h1>
-            <p>中華聖潔會靈風中學 | 第二學期</p>
+            <p>中華聖潔會靈風中學 | 第三學期</p>
         </header>
         
-        <!-- Input Section -->
         <div class="section no-print">
-            <h2>📝 輸入資料</h2>
+            <h2>📥 貼上Excel數據</h2>
             
-            <div class="input-group">
-                <label>選擇學期</label>
-                <select id="termSelect">
-                    <option value="1">第一學期</option>
-                    <option value="2" selected>第二學期</option>
-                    <option value="3">第三學期</option>
-                </select>
+            <div class="paste-instructions">
+                <strong>使用方法：</strong> 直接由Excel既Sheet3貼上兩樣野：<br>
+                1. 先貼老師數據（第一行唔洗）- 直接貼Column I-M既61行<br>
+                2. 再貼日期數據 - 直接貼Column A既日期<br>
+                <em>（系統會自動識別老師當值次數同日期）</em>
             </div>
             
             <div class="input-group">
-                <label>老師名單（每行一個，格式：姓名, 上學期當值次數）</label>
-                <textarea id="teachersInput" placeholder="例如：
-陳老師, 2
-李老師, 1
-張老師, 3"></textarea>
+                <label>老師數據 (由Excel貼上，格式：老師ID, 第一學期, 第二學期, 第三學期... 或淨係貼最後果行總計)</label>
+                <textarea id="rawTeachers" placeholder="例如：
+1	2	0	0	2
+2	2	0	0	2
+3	0	0	0	0
+4	2	1	0	3
+..."></textarea>
             </div>
             
             <div class="input-group">
-                <label>當值日期（每行一個，格式：日期, Day編號, 房間編號）</label>
-                <textarea id="datesInput" placeholder="例如：
-2026-01-15, 1, 301
-2026-01-16, 2, 301
-2026-01-19, 1, 305
-2026-01-20, 2, 305
-2026-01-21, 3, 301
-2026-01-22, 4, 301
-2026-01-23, 5, 305
-2026-02-10, 1, 301
-2026-02-11, 2, 301
-2026-02-12, 3, 305
-2026-02-13, 4, 305
-2026-02-24, 1, 301
-2026-02-25, 2, 301
-2026-02-26, 3, 305"></textarea>
+                <label>當值日期 (由Excel Column A貼上)</label>
+                <textarea id="rawDates" placeholder="例如：
+2025/9/10	3	24	（舊數據）
+2026/3/16	1	（第三學期開始）"></textarea>
             </div>
             
-            <div class="input-group">
-                <label>老師偏好（可選，格式：姓名, prefer_days, must_not_days, cannot_days）</label>
-                <textarea id="preferencesInput" placeholder="例如：
-陳老師, 1|3, 5, 2|4
-李老師, 2, 1|3, 
-張老師, , 5, 1|2|3|4|5"></textarea>
-            </div>
-            
-            <button class="btn-primary" onclick="generateSchedule()">🔄 生成編排</button>
+            <button class="btn-primary" onclick="processAndGenerate()">🔄 處理數據並生成編排</button>
             <button class="btn-secondary" onclick="printSchedule()">🖨️ 列印表格</button>
         </div>
         
-        <!-- Results Section -->
         <div class="section" id="resultsSection" style="display: none;">
             <h2>📊 編排結果</h2>
-            
             <div class="summary" id="summary"></div>
-            
             <table id="scheduleTable">
                 <thead>
                     <tr>
@@ -190,278 +150,194 @@
                         <th>Day</th>
                         <th>房間</th>
                         <th>當值老師</th>
-                        <th>備註</th>
                     </tr>
                 </thead>
                 <tbody id="scheduleBody"></tbody>
             </table>
         </div>
-        
-        <!-- Print Area -->
-        <div class="print-area">
-            <h2>📋 欠交功課當值表 - 第二學期</h2>
-            <div id="printContent"></div>
-        </div>
     </div>
     
     <script>
-        // 預設數據（第二學期 - 到3月中考試完）
-        const defaultTeachers = `老師03, 0
-老師10, 1
-老師16, 1
-老師36, 1
-老師37, 1
-老師48, 1
-老師49, 1
-老師52, 1
-老師55, 1
-老師59, 1
-老師01, 2
-老師02, 2
-老師04, 2
-老師06, 2
-老師07, 2
-老師09, 2
-老師14, 2
-老師17, 2
-老師19, 2
-老師20, 2
-老師21, 2
-老師23, 2
-老師24, 2
-老師25, 2
-老師27, 2
-老師30, 2
-老師33, 2
-老師34, 2
-老師35, 2
-老師39, 2
-老師40, 2
-老師41, 2
-老師43, 2
-老師45, 2
-老師47, 2
-老師50, 2
-老師53, 2
-老師54, 2
-老師56, 2
-老師57, 2
-老師60, 2
-老師11, 3
-老師13, 3
-老師15, 3
-老師26, 3
-老師28, 3
-老師29, 3
-老師31, 3
-老師32, 3
-老師38, 3
-老師46, 3
-老師61, 3
-老師58, 4
-老師03, 0
-老師05, 0
-老師12, 0
-老師18, 0
-老師22, 0
-老師42, 0
-老師44, 0
-老師51, 0`;
-
-        // 第三學期日期 (由你輸入)
-        const defaultDates = `2026-03-16, 1
-2026-03-17, 2
-2026-03-18, 3
-2026-03-19, 4
-2026-03-23, 1
-2026-03-24, 2
-2026-03-25, 3
-2026-04-09, 4
-2026-04-13, 1
-2026-04-14, 2
-2026-04-15, 3
-2026-04-16, 4
-2026-04-20, 1
-2026-04-21, 2
-2026-04-22, 3
-2026-04-23, 4
-2026-04-27, 1
-2026-04-28, 2
-2026-04-29, 3
-2026-04-30, 4
-2026-05-04, 1
-2026-05-05, 2
-2026-05-06, 3
-2026-05-07, 4
-2026-05-11, 1
-2026-05-12, 2
-2026-05-13, 3
-2026-05-14, 4
-2026-05-18, 1
-2026-05-19, 2
-2026-05-20, 3
-2026-05-21, 4
-2026-05-26, 2
-2026-05-27, 3
-2026-06-01, 1
-2026-06-02, 2
-2026-06-03, 3
-2026-06-04, 4;
-
-        // 初始化
-        document.getElementById('teachersInput').value = defaultTeachers;
-        document.getElementById('datesInput').value = defaultDates;
-
-        function generateSchedule() {
-            // 解析老師數據
-            const teachersText = document.getElementById('teachersInput').value.trim();
-            const teachers = teachersText.split('\n').filter(line => line.trim()).map(line => {
-                const [name, prevCount] = line.split(',').map(s => s.trim());
-                return {
-                    name: name,
-                    prevCount: parseInt(prevCount) || 0,
-                    assignedCount: 0,
-                    assignments: []
-                };
-            });
-
-            // 解析日期數據（每個日期一行，系統自動分配3間房）
-            const datesText = document.getElementById('datesInput').value.trim();
-            const dates = datesText.split('\n').filter(line => line.trim()).map(line => {
-                const [date, day] = line.split(',').map(s => s.trim());
-                return { date, day: parseInt(day), teachers: [] };
-            });
-
-            // 解析偏好
-            const prefText = document.getElementById('preferencesInput').value.trim();
-            const preferences = {};
-            prefText.split('\n').filter(line => line.trim()).forEach(line => {
-                const parts = line.split(',').map(s => s.trim());
-                if (parts[0]) {
-                    preferences[parts[0]] = {
-                        prefer: parts[1] ? parts[1].split('|').map(d => parseInt(d)) : [],
-                        mustNot: parts[2] ? parts[2].split('|').map(d => parseInt(d)) : [],
-                        cannot: parts[3] ? parts[3].split('|').map(d => parseInt(d)) : []
-                    };
+        let teachers = [];
+        let dates = [];
+        
+        function processAndGenerate() {
+            // Process teachers from raw input
+            const rawTeachers = document.getElementById('rawTeachers').value.trim();
+            if (!rawTeachers) {
+                alert('請貼上老師數據！');
+                return;
+            }
+            
+            // Parse teacher data - look for the term 2 data (columns I-M)
+            // Format: 老師ID\t第一學期\t第二學期\t第三學期\t總計
+            const teacherCounts = {};
+            const lines = rawTeachers.split('\n');
+            
+            for (let line of lines) {
+                // Skip empty lines
+                if (!line.trim()) continue;
+                
+                // Split by tab or multiple spaces
+                const parts = line.split(/[\t,\s]+/).filter(p => p);
+                if (parts.length < 2) continue;
+                
+                // Try to find teacher ID and term 2 count
+                // Looking at the data: row number = teacher ID, columns after are counts
+                // For term 2, it's column M (4th column after ID)
+                // Or we can use column I (1st data column) which seems to be term 1
+                
+                // The format seems to be: 列號,第一列data,第二列data,...
+                // Let's use the last column as term 2 or the one labeled
+                
+                // Simple approach: use the 4th number as term 2 count
+                const nums = parts.map(p => parseInt(p.replace(/[^0-9]/g, ''))).filter(n => !isNaN(n));
+                if (nums.length >= 2) {
+                    const teacherId = nums[0];
+                    // The 4th number seems to be term 2
+                    const term2Count = nums.length >= 5 ? nums[4] : (nums.length >= 2 ? nums[1] : 0);
+                    if (teacherId && teacherId > 0 && teacherId <= 61) {
+                        teacherCounts[teacherId] = term2Count || 0;
+                    }
                 }
-            });
-
-            // 綁定偏好到老師
-            teachers.forEach(t => {
-                if (preferences[t.name]) {
-                    t.prefer = preferences[t.name].prefer;
-                    t.mustNot = preferences[t.name].mustNot || [];
-                    t.cannot = preferences[t.name].cannot || [];
-                } else {
-                    t.prefer = [];
-                    t.mustNot = [];
-                    t.cannot = [];
+            }
+            
+            // Filter exempt teachers (3,5,12,18,22,42,44,51)
+            const exempt = {3:1, 5:1, 12:1, 18:1, 22:1, 42:1, 44:1, 51:1};
+            
+            teachers = [];
+            for (let id in teacherCounts) {
+                if (!exempt[id]) {
+                    teachers.push({
+                        name: '老師' + id.padStart(2, '0'),
+                        prevCount: teacherCounts[id],
+                        assignedCount: 0,
+                        id: parseInt(id)
+                    });
                 }
-            });
-
-            // 根據上學期次數排序（少既排先）
+            }
+            
+            // Sort by duty count ascending
             teachers.sort((a, b) => a.prevCount - b.prevCount);
-
-            // 房間優先順序
+            
+            // Process dates
+            const rawDates = document.getElementById('rawDates').value.trim();
+            dates = [];
+            
+            if (rawDates) {
+                const dateLines = rawDates.split('\n');
+                for (let line of dateLines) {
+                    if (!line.trim()) continue;
+                    
+                    // Look for 2026 dates (third term)
+                    const match = line.match(/(2026[/-]\d+[/-]\d+)/);
+                    if (match) {
+                        // Try to extract day number
+                        const parts = line.split(/[\t,]+/).filter(p => p.trim());
+                        let dayNum = 1;
+                        for (let p of parts) {
+                            const d = parseInt(p.replace(/[^0-9]/g, ''));
+                            if (d >= 1 && d <= 5) {
+                                dayNum = d;
+                                break;
+                            }
+                        }
+                        
+                        const dateStr = match[1].replace(/\//g, '-');
+                        dates.push({ date: dateStr, day: dayNum, teachers: [] });
+                    }
+                }
+            }
+            
+            if (dates.length === 0) {
+                alert('搵唔到日期！請確保貼上2026年既日期');
+                return;
+            }
+            
+            if (teachers.length === 0) {
+                alert('搵唔到老師數據！請貼上正確格式');
+                return;
+            }
+            
+            // Generate schedule
+            generateSchedule();
+        }
+        
+        function generateSchedule() {
             const roomPriority = ['301', '305', 'G01B'];
-
-            // 編排演算法 - 每個日期3位老師
+            
+            // Generate assignments
             dates.forEach(slot => {
-                const dayNum = slot.day;
                 const usedToday = [];
                 
-                // 每間房分配一個老師
                 roomPriority.forEach(room => {
-                    // 搵可以做既老師
+                    // Find available teacher
                     let available = teachers.filter(t => {
-                        if (usedToday.includes(t.name)) return false;  // 呢日用咗
-                        if (t.assignedCount >= 3) return false;       // 超過3次
-                        if (t.cannot.includes(dayNum)) return false;  // 唔可以做呢日
+                        if (usedToday.includes(t.name)) return false;
+                        if (t.assignedCount >= 3) return false;  // Max 3 per term
                         return true;
                     });
-
-                    // 排序：prefer > 上學期次數少
-                    available.sort((a, b) => {
-                        const aPrefers = a.prefer.includes(dayNum) ? 0 : 1;
-                        const bPrefers = b.prefer.includes(dayNum) ? 0 : 1;
-                        if (aPrefers !== bPrefers) return aPrefers - bPrefers;
-                        return a.prevCount - b.prevCount;
-                    });
-
-                    // 揀老師
+                    
+                    // Sort by previous count (ascending) and prefer less assigned
+                    available.sort((a, b) => a.prevCount - b.prevCount);
+                    
                     if (available.length > 0) {
                         const selected = available[0];
                         slot.teachers.push({ room: room, teacher: selected.name });
                         selected.assignedCount++;
-                        selected.assignments.push(slot.date);
                         usedToday.push(selected.name);
                     } else {
                         slot.teachers.push({ room: room, teacher: '（待安排）' });
                     }
                 });
             });
-
-            // 顯示結果
-            displayResults(teachers, dates);
+            
+            displayResults();
         }
-
-        function displayResults(teachers, dates) {
+        
+        function displayResults() {
             const tbody = document.getElementById('scheduleBody');
             tbody.innerHTML = '';
-
-            // 每個日期顯示3行（301, 305, G01B）
+            
             dates.forEach(slot => {
                 slot.teachers.forEach((t, idx) => {
                     let roomClass = '';
                     if (t.room === '301') roomClass = 'room-301';
                     else if (t.room === '305') roomClass = 'room-305';
                     else roomClass = 'room-g01b';
-
+                    
                     tbody.innerHTML += `
                         <tr class="${roomClass}">
                             <td>${idx === 0 ? slot.date : ''}</td>
                             <td>${idx === 0 ? 'Day ' + slot.day : ''}</td>
                             <td>${t.room}</td>
                             <td>${t.teacher}</td>
-                            <td>${t.teacher === '（待安排）' ? '⚠️' : ''}</td>
                         </tr>
                     `;
                 });
             });
-
-            // Summary - 計算實際老師數
+            
+            // Summary
             const totalAssignments = dates.reduce((sum, slot) => {
                 return sum + slot.teachers.filter(t => t.teacher !== '（待安排）').length;
             }, 0);
             
-            const unassignedCount = dates.reduce((sum, slot) => {
+            const unassigned = dates.reduce((sum, slot) => {
                 return sum + slot.teachers.filter(t => t.teacher === '（待安排）').length;
             }, 0);
             
             const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
-
+            
             document.getElementById('summary').innerHTML = `
-                <div class="summary-card">
-                    <div class="num">${dates.length}</div>
-                    <div class="label">總當值日數</div>
-                </div>
-                <div class="summary-card">
-                    <div class="num">${totalAssignments}</div>
-                    <div class="label">已編排老師</div>
-                </div>
-                <div class="summary-card">
-                    <div class="num">${unassignedCount}</div>
-                    <div class="label">未編排</div>
-                </div>
-                <div class="summary-card">
-                    <div class="num">${teachersWithDuty}</div>
-                    <div class="label">參與老師</div>
-                </div>
+                <div class="summary-card"><div class="num">${dates.length}</div><div class="label">總當值日</div></div>
+                <div class="summary-card"><div class="num">${totalAssignments}</div><div class="label">已編排</div></div>
+                <div class="summary-card"><div class="num">${unassigned}</div><div class="label">未編排</div></div>
+                <div class="summary-card"><div class="num">${teachersWithDuty}</div><div class="label">參與老師</div></div>
             `;
-
+            
             document.getElementById('resultsSection').style.display = 'block';
         }
-
+        
         function printSchedule() {
             window.print();
         }
