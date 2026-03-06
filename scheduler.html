@@ -296,44 +296,48 @@
         }
         
         function displayResults() {
-            const tbody = document.getElementById('scheduleBody');
-            tbody.innerHTML = '';
+            // Group by room for table format
+            const rooms = {'301': [], '305': [], 'G01B': []};
+            const allDates = [...new Set(dates.map(d => d.date))];
             
             dates.forEach(slot => {
-                slot.teachers.forEach((t, idx) => {
-                    let roomClass = '';
-                    if (t.room === '301') roomClass = 'room-301';
-                    else if (t.room === '305') roomClass = 'room-305';
-                    else roomClass = 'room-g01b';
-                    
-                    tbody.innerHTML += `
-                        <tr class="${roomClass}">
-                            <td>${idx === 0 ? slot.date : ''}</td>
-                            <td>${idx === 0 ? 'Day ' + slot.day : ''}</td>
-                            <td>${t.room}</td>
-                            <td>${t.teacher}</td>
-                        </tr>
-                    `;
+                slot.teachers.forEach(t => {
+                    rooms[t.room].push({date: slot.date, teacher: t.teacher});
                 });
             });
             
+            // Build room-based table (like the image)
+            let html = '<table style="width:100%; border-collapse:collapse;"><thead><tr><th style="background:#1e3c72;color:white;padding:10px;">地點</th>';
+            
+            // Date headers
+            allDates.forEach(date => {
+                const slot = dates.find(d => d.date === date);
+                const day = slot ? 'Day ' + slot.day : '';
+                const shortDate = date.replace('2026-', '');
+                html += '<th style="background:#1e3c72;color:white;padding:8px;font-size:0.85rem;">' + shortDate + '<br>' + day + '</th>';
+            });
+            html += '</tr></thead><tbody>';
+            
+            // Room rows
+            ['301', '305', 'G01B'].forEach(room => {
+                html += '<tr><td style="background:#e3f2fd;padding:10px;font-weight:bold;">' + room + '</td>';
+                allDates.forEach(date => {
+                    const assignment = rooms[room].find(r => r.date === date);
+                    const teacher = assignment ? assignment.teacher.replace('老師', '') : '';
+                    html += '<td style="padding:8px;text-align:center;border:1px solid #eee;">' + teacher + '</td>';
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            
+            document.getElementById('scheduleBody').innerHTML = html;
+            
             // Summary
-            const totalAssignments = dates.reduce((sum, slot) => {
-                return sum + slot.teachers.filter(t => t.teacher !== '（待安排）').length;
-            }, 0);
-            
-            const unassigned = dates.reduce((sum, slot) => {
-                return sum + slot.teachers.filter(t => t.teacher === '（待安排）').length;
-            }, 0);
-            
+            const totalAssignments = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher !== '（待安排）').length, 0);
+            const unassigned = dates.reduce((sum, slot) => sum + slot.teachers.filter(t => t.teacher === '（待安排）').length, 0);
             const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
             
-            document.getElementById('summary').innerHTML = `
-                <div class="summary-card"><div class="num">${dates.length}</div><div class="label">總當值日</div></div>
-                <div class="summary-card"><div class="num">${totalAssignments}</div><div class="label">已編排</div></div>
-                <div class="summary-card"><div class="num">${unassigned}</div><div class="label">未編排</div></div>
-                <div class="summary-card"><div class="num">${teachersWithDuty}</div><div class="label">參與老師</div></div>
-            `;
+            document.getElementById('summary').innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + unassigned + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div>';
             
             document.getElementById('resultsSection').style.display = 'block';
         }
