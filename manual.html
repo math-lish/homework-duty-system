@@ -54,6 +54,10 @@
         
         .action-bar { background: #e3f2fd; padding: 15px; border-radius: 10px; margin: 15px 0; text-align: center; }
         
+        .status-indicator { display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 12px; margin-left: 10px; }
+        .status-checked { background: #28a745; color: white; }
+        .status-unchecked { background: #6c757d; color: white; }
+        
         .fairness-info { background: #e8f5e9; border: 1px solid #4caf50; border-radius: 10px; padding: 15px; margin: 15px 0; }
         .fairness-info h4 { margin-top: 0; color: #2e7d32; }
         .fairness-info ul { margin: 0; padding-left: 20px; }
@@ -70,6 +74,7 @@
         <!-- Step 1: Import -->
         <div class="section" id="importSection">
             <h2>Step 1: 匯入表格</h2>
+            <span class="status-indicator status-unchecked" id="step1-status">未開始</span>
             <p>選擇匯入格式：</p>
             <div class="checkbox-group">
                 <label><input type="radio" name="importType" value="vertical" checked> 垂直表格 (Excel直向版)</label>
@@ -87,7 +92,7 @@
         
         <!-- Step 2: Display -->
         <div class="section hidden" id="displaySection">
-            <h2>Step 2: 表格內容 + 條件設定</h2>
+            <h2>Step 2: 表格內容 + 條件設定 <span class="status-indicator status-unchecked" id="step2-status">未檢查</span></h2>
             <div class="condition-inputs" style="margin-top:15px;padding:15px;background:#fff;border-radius:8px;">
                 <h4 style="margin:10px 0;">📋 條件設定（可選）- 輸入後可選擇「只檢查」或「編輯」</h4>
                 
@@ -134,11 +139,12 @@
         
         <!-- Step 3: Edit Mode -->
         <div class="section hidden" id="editSection">
-            <h2>Step 3: 編輯模式</h2>
+            <h2>Step 3: 編輯模式 <span class="status-indicator status-unchecked" id="step3-status">未檢查</span></h2>
             <p>👆 點擊老師名稱可以交換位置（選擇兩個再交換）</p>
             <div class="action-bar">
+                <button class="btn btn-secondary" onclick="goBackFromEdit()">⬅️ 返回上一步</button>
                 <button class="btn btn-danger" onclick="cancelEdit()">❌ 取消編輯</button>
-                <button class="btn btn-primary" onclick="saveEdit()">💾 儲存編輯</button>
+                <button class="btn btn-primary" onclick="saveEdit()">💾 儲存並檢查</button>
             </div>
             <table id="editTable">
                 <thead>
@@ -156,7 +162,7 @@
         
         <!-- Step 4: Validation -->
         <div class="section hidden" id="validationSection">
-            <h2>Step 4: 儲存前檢查</h2>
+            <h2>Step 4: 儲存前檢查 <span class="status-indicator status-checked" id="step4-status">已檢查</span></h2>
             
             <div id="rulesCheck">
                 <h3>📋 編排規則檢查結果</h3>
@@ -177,6 +183,7 @@
             </div>
             
             <div class="action-bar">
+                <button class="btn btn-secondary" onclick="goBackFromValidation()">⬅️ 返回上一步</button>
                 <button class="btn btn-warning" onclick="continueEdit()">✏️ 繼續編輯</button>
                 <button class="btn btn-primary" onclick="confirmSave()">✅ 確定儲存</button>
             </div>
@@ -191,6 +198,14 @@
     </div>
     
     <script>
+        // Global validation results storage
+        window.validationResults = {
+            rulesHtml: '',
+            hasViolations: false,
+            violationsList: [],
+            checked: false
+        };
+        
         // Handle import parameter from URL
         window.addEventListener('DOMContentLoaded', function() {
             const params = new URLSearchParams(window.location.search);
@@ -249,6 +264,10 @@
             // Show display section
             document.getElementById('importSection').classList.add('hidden');
             document.getElementById('displaySection').classList.remove('hidden');
+            
+            // Update status indicators
+            updateStatus('step1-status', '已完成', 'status-checked');
+            updateStatus('step2-status', '未檢查', 'status-unchecked');
             
             displayTable();
             showToast('✅ 匯入成功！', '#4CAF50');
@@ -390,6 +409,9 @@
             // Hide edit buttons, show only "繼續" button
             document.getElementById('validationSection').classList.remove('hidden');
             document.getElementById('displaySection').classList.add('hidden');
+            
+            // Update status
+            updateStatus('step2-status', '已檢查', 'status-checked');
         }
         
         // Step 3: Edit mode
@@ -397,6 +419,7 @@
             selectedCells = [];
             document.getElementById('displaySection').classList.add('hidden');
             document.getElementById('editSection').classList.remove('hidden');
+            updateStatus('step3-status', '編輯中', 'status-unchecked');
             displayEditTable();
         }
         
@@ -475,7 +498,12 @@
             
             document.getElementById('editSection').classList.add('hidden');
             document.getElementById('validationSection').classList.remove('hidden');
+            
+            // Run validation and store results
             validateRules();
+            
+            // Update status
+            updateStatus('step3-status', '已檢查', 'status-checked');
         }
         
         // Step 4: Validation
@@ -537,6 +565,13 @@
             } else {
                 violationsSection.classList.add('hidden');
             }
+            
+            // Store results for back navigation
+            storeValidationResults(html, hasViolations, violationsList);
+            
+            // Update status indicators
+            updateStatus('step3-status', '已檢查', 'status-checked');
+            updateStatus('step4-status', '已檢查', 'status-checked');
         }
         
         function checkRule1() {
@@ -809,6 +844,68 @@
             toast.textContent = message;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Update status indicator
+        function updateStatus(elementId, text, className) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.textContent = text;
+                el.className = 'status-indicator ' + className;
+            }
+        }
+        
+        // Go back from edit (Step 3 -> Step 2)
+        function goBackFromEdit() {
+            document.getElementById('editSection').classList.add('hidden');
+            document.getElementById('displaySection').classList.remove('hidden');
+            // Results preserved in window.validationResults
+            showToast('⬅️ 已返回上一步（結果已保留）', '#6c757d');
+        }
+        
+        // Go back from validation (Step 4 -> Step 3)
+        function goBackFromValidation() {
+            document.getElementById('validationSection').classList.add('hidden');
+            document.getElementById('editSection').classList.remove('hidden');
+            
+            // Restore validation results if available
+            if (!restoreValidationResults()) {
+                showToast('⚠️ 無保存的檢查結果，請重新儲存', '#ffc107');
+            }
+            
+            // Update status
+            updateStatus('step3-status', '已檢查', 'status-checked');
+            updateStatus('step4-status', '未更新', 'status-unchecked');
+            showToast('⬅️ 已返回上一步（結果已保留）', '#6c757d');
+        }
+        
+        // Update validation results storage
+        function storeValidationResults(html, hasViolations, violationsList) {
+            window.validationResults = {
+                rulesHtml: html,
+                hasViolations: hasViolations,
+                violationsList: violationsList,
+                checked: true
+            };
+        }
+        
+        // Restore validation results display
+        function restoreValidationResults() {
+            if (window.validationResults && window.validationResults.checked) {
+                document.getElementById('rulesBody').innerHTML = window.validationResults.rulesHtml;
+                
+                const violationsSection = document.getElementById('violationsSection');
+                if (window.validationResults.hasViolations) {
+                    violationsSection.classList.remove('hidden');
+                    document.getElementById('violationsList').innerHTML = 
+                        window.validationResults.violationsList.map(v => `<li>${v}</li>`).join('');
+                } else {
+                    violationsSection.classList.add('hidden');
+                }
+                
+                return true;
+            }
+            return false;
         }
     </script>
 </body>
