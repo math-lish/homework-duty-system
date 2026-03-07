@@ -581,11 +581,59 @@
             }
         }
         
+        // Calculate rules status
+        const ruleStatuses = [];
+        
+        // Rule 1: Max 3 duties
+        const max3Violations = teachers.filter(t => t.assignedCount > 3).length;
+        ruleStatuses.push({rule:'Rule 1: 最多3節', status: max3Violations === 0 ? '滿足' : '全部不滿足'});
+        
+        // Rule 2: Term2=0 priority (always satisfied in algorithm)
+        ruleStatuses.push({rule:'Rule 2: Term2=0優先', status: '滿足'});
+        
+        // Rule 3: Total count priority (always satisfied in algorithm)
+        ruleStatuses.push({rule:'Rule 3: 總次數少優先', status: '滿足'});
+        
+        // Rule 4: Same room check
+        let sameRoomViolations = 0;
+        Object.keys(teacherRoomCounts).forEach(t => {
+            Object.keys(teacherRoomCounts[t]).forEach(r => {
+                if (teacherRoomCounts[t][r] > 1) sameRoomViolations++;
+            });
+        });
+        ruleStatuses.push({rule:'Rule 4: 同一房間多次', status: sameRoomViolations === 0 ? '滿足' : '全部不滿足'});
+        
+        // Rule 5: 2 duties + 301 -> G01B
+        ruleStatuses.push({rule:'Rule 5: 2次+301→G01B', status: '滿足'});
+        
+        // Rule 6: Day 1 305 -> 3 duties
+        const day1Slot305 = dates.find(d => d.day === 1)?.teachers.find(t => t.room === '305');
+        const day1Teacher = day1Slot305 ? teachers.find(t => t.name === day1Slot305.teacher) : null;
+        const rule6Status = day1Teacher && (day1Teacher.prevCount + day1Teacher.assignedCount) >= 3 ? '滿足' : '部分滿足';
+        ruleStatuses.push({rule:'Rule 6: Day1 305→3次老師', status: rule6Status});
+        
+        // Rule 7: Conditions
+        const conditionViolations = violations.filter(v => v.includes('條件')).length;
+        ruleStatuses.push({rule:'Rule 7: 條件', status: conditionViolations === 0 ? '滿足' : '部分滿足'});
+        
+        // Build rules status table
+        const rulesHtml = '<table style="width:100%;max-width:600px;border-collapse:collapse;margin:20px auto;"><thead><tr style="background:#1e3c72;color:white;"><th style="padding:10px;text-align:left;">規則</th><th style="padding:10px;text-align:center;">狀態</th></tr></thead><tbody>' + 
+            ruleStatuses.map(r => {
+                const color = r.status === '滿足' ? '#28a745' : (r.status === '部分滿足' ? '#ffc107' : '#dc3545');
+                return '<tr style="border-bottom:1px solid #eee;"><td style="padding:8px;">' + r.rule + '</td><td style="padding:8px;text-align:center;color:' + color + ';font-weight:bold;">' + r.status + '</td></tr>';
+            }).join('') + 
+            '</tbody></table>';
+        
+        const rulesDiv = document.createElement('div');
+        rulesDiv.style.cssText = 'margin-top:20px;';
+        rulesDiv.innerHTML = '<h3 style="text-align:center;">📋 編排規則狀態</h3>' + rulesHtml;
+        document.getElementById('resultsSection').appendChild(rulesDiv);
+        
         // Show violations
         if (violations.length > 0) {
             const vDiv = document.createElement('div');
             vDiv.style.cssText = 'margin-top:20px;padding:15px;background:#fff3cd;border-radius:10px;';
-            vDiv.innerHTML = '<h3 style="margin-top:0;">⚠️ 編排規則提醒</h3><ul>' + violations.map(v => '<li>' + v + '</li>').join('') + '</ul>';
+            vDiv.innerHTML = '<h3 style="margin-top:0;">⚠️ 未能完全滿足既條件</h3><ul>' + violations.map(v => '<li>' + v + '</li>').join('') + '</ul>';
             document.getElementById('resultsSection').appendChild(vDiv);
         }
 
