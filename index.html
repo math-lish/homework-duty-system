@@ -438,10 +438,10 @@
                         
                         // Priority 6: For Day 1's 305, prioritize teachers who already have 2 duties this term
                         if (room === '305' && slot.day === 1) {
-                            const aAlready2ThisTerm = a.assignedCount >= 2;
-                            const bAlready2ThisTerm = b.assignedCount >= 2;
-                            if (aAlready2ThisTerm && !bAlready2ThisTerm) return -1;
-                            if (bAlready2ThisTerm && !aAlready2ThisTerm) return 1;
+                            const aTotal = a.prevCount + a.assignedCount;
+                            const bTotal = b.prevCount + b.assignedCount;
+                            if (aTotal >= 3 && bTotal < 3) return -1;
+                            if (bTotal >= 3 && aTotal < 3) return 1;
                         }
                         
                         // Otherwise sort by total count
