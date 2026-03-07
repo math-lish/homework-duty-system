@@ -211,7 +211,7 @@
 2026-03-25,3</textarea>
             </div>
             
-            <button class="btn-primary" onclick="try { loadFromSheet(); } catch(e) { console.log(e); } try { displayResults(); } catch(e) { console.log(e); }">🔄 處理數據並生成編排</button>
+            <button class="btn-primary" onclick="try { loadFromSheet(); } catch(e) { console.log(e); }">🔄 處理數據並生成編排</button>
             
         </div>
         
@@ -346,6 +346,7 @@
             
             // Filter out exempt teachers
             teachers = teachers.filter(t => !exemptList.includes(t.name));
+        window.exemptTeachers = exemptList;
             
             // Store for revision week handling
             window.juniorClassTeachers = juniorList;
