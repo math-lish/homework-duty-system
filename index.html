@@ -398,8 +398,18 @@
                     let available = teachers.filter(t => {
                         if (usedToday.includes(t.name)) return false;
                         if (t.assignedCount >= 3) return false;  // Max 3 per term
+                        if (t.roomCounts[room] > 0) return false;  // Already has this room
                         return true;
                     });
+                    
+                    // If no available after room filter, allow any teacher who hasn't been used today
+                    if (available.length === 0) {
+                        available = teachers.filter(t => {
+                            if (usedToday.includes(t.name)) return false;
+                            if (t.assignedCount >= 3) return false;
+                            return true;
+                        });
+                    }
                     
                     // Sort by total + term2=0 priority + room distribution + conditions
                     available.sort((a, b) => {
