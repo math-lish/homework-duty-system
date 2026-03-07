@@ -605,6 +605,18 @@
         const conditionViolations = violations.filter(v => v.includes('條件')).length;
         ruleStatuses.push({rule:'規則7：用戶輸入的條件會盡量滿足', status: conditionViolations === 0 ? '✅ 滿足' : '⚠️ 部分滿足'});
         
+        // Rule 8: Same teacher cannot be in 2 rooms on same day
+        const rule8Violations = [];
+        dates.forEach(slot => {
+            const teachersOnDay = slot.teachers.map(t => t.teacher).filter(t => t);
+            const uniqueTeachers = [...new Set(teachersOnDay)];
+            if (teachersOnDay.length !== uniqueTeachers.length) {
+                const duplicates = teachersOnDay.filter((t, i) => teachersOnDay.indexOf(t) !== i);
+                duplicates.forEach(t => rule8Violations.push(t + ' 在' + slot.date + '當值多於1個房間'));
+            }
+        });
+        ruleStatuses.push({rule:'規則8：同一位老師不會在同一天當值超過一個房間', status: rule8Violations.length === 0 ? '✅ 滿足' : '❌ 不滿足'});
+        
         // Build rules status table
         const rulesHtml = '<table style="width:100%;max-width:600px;border-collapse:collapse;margin:20px auto;"><thead><tr style="background:#1e3c72;color:white;"><th style="padding:10px;text-align:left;">規則</th><th style="padding:10px;text-align:center;">狀態</th></tr></thead><tbody>' + 
             ruleStatuses.map(r => {
