@@ -67,20 +67,7 @@
                 <label><input type="radio" name="importType" value="vertical" checked> 垂直表格 (Excel直向版)</label>
                 <label><input type="radio" name="importType" value="horizontal"> 橫置表格 (Word橫向版)</label>
             </div>
-            <div class="condition-inputs" style="margin-top:15px;padding:15px;background:#fff;border-radius:8px;">
-                <h4 style="margin:10px 0;">規則7 條件設定（可選）</h4>
-                <label style="margin-top:10px;">必然不能當值日 (老師名稱，每行一個)：</label>
-                <textarea id="cannotDays" style="height:60px;" placeholder="陳大明
-李四海"></textarea>
-                
-                <label style="margin-top:10px;">盡量滿足條件 (老師名稱,+Day/-Day，每行一個)：</label>
-                <textarea id="preferDays" style="height:60px;" placeholder="陳大明,+1,-5
-李四海,-2"></textarea>
-                
-                <label style="margin-top:10px;">溫習日（這些日期老師不能當值）：</label>
-                <textarea id="revisionDays" style="height:60px;" placeholder="2026-05-04,1
-2026-05-05,2"></textarea>
-            </div>
+            
             <label id="importLabel">粘貼垂直表格數據：</label>
             <textarea id="importData" placeholder="日期	Day	301	305	G01B
 2026-03-16	1	陳大明	李四海	林美娟
@@ -92,10 +79,30 @@
         
         <!-- Step 2: Display -->
         <div class="section hidden" id="displaySection">
-            <h2>Step 2: 表格內容</h2>
+            <h2>Step 2: 表格內容 + 條件設定</h2>
+            <div class="condition-inputs" style="margin-top:15px;padding:15px;background:#fff;border-radius:8px;">
+                <h4 style="margin:10px 0;">📋 條件設定（可選）- 輸入後可選擇「只檢查」或「編輯」</h4>
+                
+                <label style="margin-top:10px;">必然不能當值日 (格式：老師姓名,Day 例如：陳大明,1)：</label>
+                <textarea id="cannotDays" style="height:60px;" placeholder="陳大明,1
+李四海,3"></textarea>
+                
+                <label style="margin-top:10px;">盡量滿足條件 (格式：老師姓名,+Day/-Day 例如：李老師,+1,-5)：</label>
+                <textarea id="preferDays" style="height:60px;" placeholder="李老師,+1,-5
+王老師,+2"></textarea>
+                
+                <label style="margin-top:10px;">初中班主任名單 (溫習週時豁免，每行一個名稱)：</label>
+                <textarea id="juniorTeachers" style="height:60px;" placeholder="張老師
+陳老師"></textarea>
+                
+                <label style="margin-top:10px;">溫習週日期 (格式：日期,Day 例如：2026-05-04,1)：</label>
+                <textarea id="revisionDays" style="height:60px;" placeholder="2026-05-04,1
+2026-05-05,2"></textarea>
+            </div>
             <div class="action-bar">
                 <button class="btn btn-secondary" onclick="copyVertical()">📋 複製垂直表格</button>
                 <button class="btn btn-secondary" onclick="copyHorizontal()">📊 複製橫置表格</button>
+                <button class="btn btn-primary" onclick="validateOnly()">🔍 只檢查</button>
                 <button class="btn btn-warning" onclick="startEdit()">✏️ 編輯</button>
             </div>
             <table id="dataTable">
@@ -331,6 +338,27 @@
             showToast('✅ 已複製橫置表格到剪貼簿！', '#4CAF50');
         }
         
+        // Step 3a: Validate only (without editing)
+        function validateOnly() {
+            // Read Rule 7 conditions
+            const cannotInput = document.getElementById('cannotDays')?.value || '';
+            const preferInput = document.getElementById('preferDays')?.value || '';
+            const juniorInput = document.getElementById('juniorTeachers')?.value || '';
+            const revisionInput = document.getElementById('revisionDays')?.value || '';
+            
+            window.cannotDays = cannotInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.preferDays = preferInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.juniorTeachers = juniorInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.revisionDays = revisionInput.split('\n').map(s => s.trim()).filter(s => s);
+            
+            // Run validation
+            validateRules();
+            
+            // Hide edit buttons, show only "繼續" button
+            document.getElementById('validationSection').classList.remove('hidden');
+            document.getElementById('displaySection').classList.add('hidden');
+        }
+        
         // Step 3: Edit mode
         function startEdit() {
             selectedCells = [];
@@ -409,10 +437,12 @@
             // Read Rule 7 conditions
             const cannotInput = document.getElementById('cannotDays')?.value || '';
             const preferInput = document.getElementById('preferDays')?.value || '';
+            const juniorInput = document.getElementById('juniorTeachers')?.value || '';
             const revisionInput = document.getElementById('revisionDays')?.value || '';
             
             window.cannotDays = cannotInput.split('\n').map(s => s.trim()).filter(s => s);
             window.preferDays = preferInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.juniorTeachers = juniorInput.split('\n').map(s => s.trim()).filter(s => s);
             window.revisionDays = revisionInput.split('\n').map(s => s.trim()).filter(s => s);
             const rules = [
                 { name: '規則1：每人每學期最多當值3次', check: checkRule1 },
