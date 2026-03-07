@@ -412,22 +412,26 @@
                             if (b.term2Count === 0) return 1;
                         }
                         
-                        // Priority 6: If has 2 duties and got 301, must get G01B
+                        // Priority 4: If teacher already has this room, deprioritize
+                        if (a.roomCounts[room] > 0 && b.roomCounts[room] === 0) return 1;
+                        if (b.roomCounts[room] > 0 && a.roomCounts[room] === 0) return -1;
+                        
+                        // Priority 5: If has 2 duties this term and got 301, must get G01B
                         if (room === 'G01B') {
-                            const aHas2Duties = (a.prevCount + a.assignedCount) === 1;
-                            const bHas2Duties = (b.prevCount + b.assignedCount) === 1;
+                            const aAlready2ThisTerm = a.assignedCount >= 2;
+                            const bAlready2ThisTerm = b.assignedCount >= 2;
                             const aHad301 = a.roomCounts['301'] > 0;
                             const bHad301 = b.roomCounts['301'] > 0;
-                            if (aHas2Duties && aHad301 && !bHas2Duties) return -1;
-                            if (bHas2Duties && bHad301 && !aHas2Duties) return 1;
+                            if (aAlready2ThisTerm && aHad301 && !bAlready2ThisTerm) return -1;
+                            if (bAlready2ThisTerm && bHad301 && !aAlready2ThisTerm) return 1;
                         }
                         
-                        // Priority 7: For Day 1's 305, after 301 done, those with 3 duties get priority
+                        // Priority 6: For Day 1's 305, prioritize teachers who already have 2 duties this term
                         if (room === '305' && slot.day === 1) {
-                            const aTotal3 = (a.prevCount + a.assignedCount) >= 2;
-                            const bTotal3 = (b.prevCount + b.assignedCount) >= 2;
-                            if (aTotal3 && !bTotal3) return -1;
-                            if (bTotal3 && !aTotal3) return 1;
+                            const aAlready2ThisTerm = a.assignedCount >= 2;
+                            const bAlready2ThisTerm = b.assignedCount >= 2;
+                            if (aAlready2ThisTerm && !bAlready2ThisTerm) return -1;
+                            if (bAlready2ThisTerm && !aAlready2ThisTerm) return 1;
                         }
                         
                         // Otherwise sort by total count
