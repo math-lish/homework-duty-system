@@ -53,6 +53,11 @@
         .checkbox-group input { margin-right: 8px; }
         
         .action-bar { background: #e3f2fd; padding: 15px; border-radius: 10px; margin: 15px 0; text-align: center; }
+        
+        .fairness-info { background: #e8f5e9; border: 1px solid #4caf50; border-radius: 10px; padding: 15px; margin: 15px 0; }
+        .fairness-info h4 { margin-top: 0; color: #2e7d32; }
+        .fairness-info ul { margin: 0; padding-left: 20px; }
+        .fairness-info li { margin: 5px 0; color: #333; }
     </style>
 </head>
 <body>
@@ -101,6 +106,11 @@
                 <label style="margin-top:10px;">溫習週日期 (格式：日期,Day 例如：2026-05-04,1)：</label>
                 <textarea id="revisionDays" style="height:60px;" placeholder="2026-05-04,1
 2026-05-05,2"></textarea>
+                
+                <label style="margin-top:10px;">老師歷史數據 (格式：名稱,第一學期,第二學期)：</label>
+                <textarea id="teacherHistory" style="height:80px;" placeholder="陳大明,2,1
+李四海,1,2
+林美娟,3,3"></textarea>
             </div>
             <div class="action-bar">
                 <button class="btn btn-secondary" onclick="copyVertical()">📋 複製垂直表格</button>
@@ -366,11 +376,13 @@
             const preferInput = document.getElementById('preferDays')?.value || '';
             const juniorInput = document.getElementById('juniorTeachers')?.value || '';
             const revisionInput = document.getElementById('revisionDays')?.value || '';
+            const historyInput = document.getElementById('teacherHistory')?.value || '';
             
             window.cannotDays = cannotInput.split('\n').map(s => s.trim()).filter(s => s);
             window.preferDays = preferInput.split('\n').map(s => s.trim()).filter(s => s);
             window.juniorTeachers = juniorInput.split('\n').map(s => s.trim()).filter(s => s);
             window.revisionDays = revisionInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.teacherHistory = historyInput.split('\n').map(s => s.trim()).filter(s => s);
             
             // Run validation
             validateRules();
@@ -448,6 +460,19 @@
         }
         
         function saveEdit() {
+            // Read conditions for validation
+            const cannotInput = document.getElementById('cannotDays')?.value || '';
+            const preferInput = document.getElementById('preferDays')?.value || '';
+            const juniorInput = document.getElementById('juniorTeachers')?.value || '';
+            const revisionInput = document.getElementById('revisionDays')?.value || '';
+            const historyInput = document.getElementById('teacherHistory')?.value || '';
+            
+            window.cannotDays = cannotInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.preferDays = preferInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.juniorTeachers = juniorInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.revisionDays = revisionInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.teacherHistory = historyInput.split('\n').map(s => s.trim()).filter(s => s);
+            
             document.getElementById('editSection').classList.add('hidden');
             document.getElementById('validationSection').classList.remove('hidden');
             validateRules();
@@ -473,7 +498,10 @@
                 { name: '規則5：如果老師已有2次當值且獲編排到301房，會安排去G01B房', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) },
                 { name: '規則6：Day 1的305號房位會編排給已有3次當值的老師', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) },
                 { name: '規則7：用戶輸入的條件會盡量滿足', check: checkRule7 },
-                { name: '規則8：同一位老師不會在同一天當值超過一個房間', check: checkRule8 }
+                { name: '規則8：同一位老師不會在同一天當值超過一個房間', check: checkRule8 },
+                { name: '規則9：每人每學期最多3次（結合歷史數據）', check: checkRule9 },
+                { name: '規則10：公平性 - term1+term2少的老師優先', check: checkRule10 },
+                { name: '規則11：均衡分配提醒', check: checkRule11 }
             ];
             
             let html = '';
@@ -592,6 +620,163 @@
             });
             
             return { pass: violations.length === 0, msg: violations.join('\n') || 'OK' };
+        }
+        
+        // Parse teacher history data
+        function parseTeacherHistory() {
+            const historyInput = document.getElementById('teacherHistory')?.value || '';
+            const history = {};
+            
+            historyInput.split('\n').forEach(line => {
+                const parts = line.split(',').map(s => s.trim());
+                if (parts.length >= 3) {
+                    const name = parts[0];
+                    const term1 = parseInt(parts[1]) || 0;
+                    const term2 = parseInt(parts[2]) || 0;
+                    history[name] = { term1, term2, total: term1 + term2 };
+                }
+            });
+            
+            return history;
+        }
+        
+        // Rule 9: Each person max 3 times per semester (with history)
+        function checkRule9() {
+            const history = parseTeacherHistory();
+            const currentCounts = { t1: {}, t2: {} }; // Track term 1 and term 2 separately
+            
+            // Assuming first half of schedule is term 1, second half is term 2
+            const midPoint = Math.floor(scheduleData.length / 2);
+            
+            scheduleData.forEach((slot, idx) => {
+                const isTerm1 = idx < midPoint;
+                Object.values(slot.rooms).forEach(teacher => {
+                    if (teacher) {
+                        if (isTerm1) {
+                            currentCounts.t1[teacher] = (currentCounts.t1[teacher] || 0) + 1;
+                        } else {
+                            currentCounts.t2[teacher] = (currentCounts.t2[teacher] || 0) + 1;
+                        }
+                    }
+                });
+            });
+            
+            const violations = [];
+            
+            // Check term 1
+            Object.entries(currentCounts.t1).forEach(([teacher, count]) => {
+                const historyTerm1 = history[teacher]?.term1 || 0;
+                const total = historyTerm1 + count;
+                if (total > 3) {
+                    violations.push(`${teacher} 第一學期已有${historyTerm1}次 + 編排${count}次 = ${total}次 (超過3次)`);
+                }
+            });
+            
+            // Check term 2
+            Object.entries(currentCounts.t2).forEach(([teacher, count]) => {
+                const historyTerm2 = history[teacher]?.term2 || 0;
+                const total = historyTerm2 + count;
+                if (total > 3) {
+                    violations.push(`${teacher} 第二學期已有${historyTerm2}次 + 編排${count}次 = ${total}次 (超過3次)`);
+                }
+            });
+            
+            return { pass: violations.length === 0, msg: violations.join('\n') || '✅ 每人每學期不超過3次' };
+        }
+        
+        // Rule 10: Fairness - teachers with lower term1+term2 get priority
+        function checkRule10() {
+            const history = parseTeacherHistory();
+            const currentCounts = {};
+            
+            scheduleData.forEach(slot => {
+                Object.values(slot.rooms).forEach(teacher => {
+                    if (teacher) {
+                        currentCounts[teacher] = (currentCounts[teacher] || 0) + 1;
+                    }
+                });
+            });
+            
+            const allTeachers = new Set([...Object.keys(history), ...Object.keys(currentCounts)]);
+            const fairnessIssues = [];
+            
+            // Get teachers with history data
+            const teachersWithHistory = [];
+            const teachersWithoutHistory = [];
+            
+            allTeachers.forEach(teacher => {
+                const historyTotal = history[teacher]?.total || 0;
+                const currentTotal = currentCounts[teacher] || 0;
+                const totalWithCurrent = historyTotal + currentTotal;
+                
+                if (historyTotal > 0 || currentTotal > 0) {
+                    teachersWithHistory.push({ teacher, total: totalWithCurrent });
+                } else {
+                    teachersWithoutHistory.push(teacher);
+                }
+            });
+            
+            // Sort by total (ascending) - those with less should get more
+            teachersWithHistory.sort((a, b) => a.total - b.total);
+            
+            // Check if someone with more total is scheduled while someone with less has 0
+            const zeroCountTeachers = teachersWithHistory.filter(t => t.total === 0).map(t => t.teacher);
+            const highCountTeachers = teachersWithHistory.filter(t => t.total >= 3).map(t => t.teacher);
+            
+            if (zeroCountTeachers.length > 0 && highCountTeachers.length > 0) {
+                fairnessIssues.push(`⚠️ 公平性提醒：${zeroCountTeachers.join(', ')} 歷史當值次數為0，但 ${highCountTeachers.join(', ')} 已達3次`);
+            }
+            
+            // Check if teacher with higher history is scheduled more than teacher with lower history
+            for (let i = 0; i < teachersWithHistory.length - 1; i++) {
+                const low = teachersWithHistory[i];
+                const high = teachersWithHistory[teachersWithHistory.length - 1];
+                if (low.total < high.total && (currentCounts[high.teacher] || 0) > (currentCounts[low.teacher] || 0)) {
+                    fairnessIssues.push(`⚠️ ${high.teacher} 歷史當值次數較多(${high.total}次)，但 ${low.teacher} 當值次數較少(${low.total}次)`);
+                }
+            }
+            
+            return { pass: true, msg: fairnessIssues.length > 0 ? fairnessIssues.join('\n') : '✅ 公平性檢查通過' };
+        }
+        
+        // Rule 11: Balanced distribution reminder
+        function checkRule11() {
+            const history = parseTeacherHistory();
+            const currentCounts = {};
+            
+            scheduleData.forEach(slot => {
+                Object.values(slot.rooms).forEach(teacher => {
+                    if (teacher) {
+                        currentCounts[teacher] = (currentCounts[teacher] || 0) + 1;
+                    }
+                });
+            });
+            
+            const reminders = [];
+            
+            // Show comparison with history
+            Object.keys(history).forEach(teacher => {
+                const histTotal = history[teacher].total;
+                const currentTotal = currentCounts[teacher] || 0;
+                const combinedTotal = histTotal + currentTotal;
+                
+                if (histTotal > 0) {
+                    reminders.push(`${teacher}: 歷史${histTotal}次 + 編排${currentTotal}次 = 共${combinedTotal}次`);
+                }
+            });
+            
+            // Show new teachers (no history)
+            Object.keys(currentCounts).forEach(teacher => {
+                if (!history[teacher]) {
+                    reminders.push(`${teacher}: 新編排${currentCounts[teacher]}次 (無歷史數據)`);
+                }
+            });
+            
+            if (reminders.length === 0) {
+                return { pass: true, msg: '✅ 無當值記錄' };
+            }
+            
+            return { pass: true, msg: reminders.join('\n') || '✅ 均衡分配檢查通過' };
         }
         
         function continueEdit() {
