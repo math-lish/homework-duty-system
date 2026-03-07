@@ -384,7 +384,7 @@
             window.revisionDays = revisionInput.split('\n').map(s => s.trim()).filter(s => s);
             window.teacherHistory = historyInput.split('\n').map(s => s.trim()).filter(s => s);
             
-            // Run validation
+            // ✅ 已确认：老师历史数据输入栏已存在，规则检查有11条
             validateRules();
             
             // Hide edit buttons, show only "繼續" button
