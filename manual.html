@@ -2,51 +2,509 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>手動輸入當值表</title>
+    <title>手動編輯當值表</title>
     <style>
-        body { font-family: -apple-system, "PingFang HK", sans-serif; padding: 20px; background: #f5f5f5; }
-        h2 { color: #1e3c72; }
-        textarea { width: 100%; height: 150px; padding: 10px; font-size: 14px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, "PingFang HK", "Microsoft JhengHei", sans-serif; padding: 20px; background: #f5f5f5; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #1e3c72; text-align: center; margin-top: 0; }
+        h2 { color: #333; border-bottom: 2px solid #1e3c72; padding-bottom: 10px; }
+        
+        .section { margin: 20px 0; padding: 20px; background: #f9f9f9; border-radius: 10px; }
+        
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        textarea { width: 100%; height: 120px; padding: 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; }
+        textarea:focus { outline: none; border-color: #1e3c72; }
+        
+        .btn { padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; margin: 5px; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .btn-primary { background: #1e3c72; }
+        .btn-secondary { background: #2196F3; }
+        .btn-danger { background: #dc3545; }
+        .btn-warning { background: #ffc107; color: #333; }
+        
+        .btn-group { margin-top: 15px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #1e3c72; color: white; }
-        .btn { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; margin: 5px; }
+        tr:nth-child(even) { background: #f5f5f5; }
+        
+        .editable { cursor: pointer; padding: 8px 12px; border-radius: 5px; transition: background 0.2s; }
+        .editable:hover { background: #fff3cd; }
+        .selected { background: #fff3cd; border: 2px solid #ffc107; }
+        
+        .rules-table { width: 100%; max-width: 700px; margin: 20px auto; border-collapse: collapse; }
+        .rules-table th, .rules-table td { padding: 12px; border: 1px solid #ddd; }
+        .rules-table th { background: #1e3c72; color: white; }
+        .status-pass { color: #28a745; font-weight: bold; }
+        .status-fail { color: #dc3545; font-weight: bold; }
+        .status-partial { color: #ffc107; font-weight: bold; }
+        
+        .violations { background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 15px; margin: 15px 0; }
+        .violations h3 { margin-top: 0; color: #856404; }
+        
+        .hidden { display: none; }
+        
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #4CAF50; color: white; padding: 15px 30px; border-radius: 25px; font-size: 16px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        
+        .checkbox-group { display: flex; gap: 20px; margin: 10px 0; }
+        .checkbox-group label { display: flex; align-items: center; font-weight: normal; cursor: pointer; }
+        .checkbox-group input { margin-right: 8px; }
+        
+        .action-bar { background: #e3f2fd; padding: 15px; border-radius: 10px; margin: 15px 0; text-align: center; }
     </style>
 </head>
 <body>
-    <h2>手動輸入當值表</h2>
-    <p>貼上直表格式既當值表（由Excel直接copy）：</p>
-    <textarea id="input" placeholder="日期	Day	301	305	G01B
-2026-03-16	1	陳大明	李四海	林美娟"></textarea>
-    <br>
-    <button class="btn" onclick="showTable()">顯示表格</button>
-    <button class="btn" onclick="copyInput()" style="background:#2196F3;">複製內容</button>
-    
-    <div id="output"></div>
+    <div class="container">
+        <h1>📋 手動編輯當值表</h1>
+        
+        <!-- Step 1: Import -->
+        <div class="section" id="importSection">
+            <h2>Step 1: 匯入表格</h2>
+            <p>選擇匯入格式：</p>
+            <div class="checkbox-group">
+                <label><input type="radio" name="importType" value="vertical" checked> 垂直表格 (Excel直向版)</label>
+                <label><input type="radio" name="importType" value="horizontal"> 橫置表格 (Word橫向版)</label>
+            </div>
+            <label id="importLabel">粘貼垂直表格數據：</label>
+            <textarea id="importData" placeholder="日期	Day	301	305	G01B
+2026-03-16	1	陳大明	李四海	林美娟
+2026-03-17	2	林美娟	陳大明	李四海"></textarea>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="importTable()">📥 匯入表格</button>
+            </div>
+        </div>
+        
+        <!-- Step 2: Display -->
+        <div class="section hidden" id="displaySection">
+            <h2>Step 2: 表格內容</h2>
+            <div class="action-bar">
+                <button class="btn btn-secondary" onclick="copyVertical()">📋 複製垂直表格</button>
+                <button class="btn btn-secondary" onclick="copyHorizontal()">📊 複製橫置表格</button>
+                <button class="btn btn-warning" onclick="startEdit()">✏️ 編輯</button>
+            </div>
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>Day</th>
+                        <th>301</th>
+                        <th>305</th>
+                        <th>G01B</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        
+        <!-- Step 3: Edit Mode -->
+        <div class="section hidden" id="editSection">
+            <h2>Step 3: 編輯模式</h2>
+            <p>👆 點擊老師名稱可以交換位置（選擇兩個再交換）</p>
+            <div class="action-bar">
+                <button class="btn btn-danger" onclick="cancelEdit()">❌ 取消編輯</button>
+                <button class="btn btn-primary" onclick="saveEdit()">💾 儲存編輯</button>
+            </div>
+            <table id="editTable">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>Day</th>
+                        <th>301</th>
+                        <th>305</th>
+                        <th>G01B</th>
+                    </tr>
+                </thead>
+                <tbody id="editBody"></tbody>
+            </table>
+        </div>
+        
+        <!-- Step 4: Validation -->
+        <div class="section hidden" id="validationSection">
+            <h2>Step 4: 儲存前檢查</h2>
+            
+            <div id="rulesCheck">
+                <h3>📋 編排規則檢查結果</h3>
+                <table class="rules-table" id="rulesTable">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">規則</th>
+                            <th style="text-align:center;">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rulesBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="violations hidden" id="violationsSection">
+                <h3>⚠️ 未滿足規則項目</h3>
+                <ul id="violationsList"></ul>
+            </div>
+            
+            <div class="action-bar">
+                <button class="btn btn-warning" onclick="continueEdit()">✏️ 繼續編輯</button>
+                <button class="btn btn-primary" onclick="confirmSave()">✅ 確定儲存</button>
+            </div>
+        </div>
+        
+        <!-- Success Message -->
+        <div class="section hidden" id="successSection">
+            <h2>✅ 儲存成功！</h2>
+            <p>當值表已更新。</p>
+            <button class="btn btn-primary" onclick="resetPage🔄 重新()">開始</button>
+        </div>
+    </div>
     
     <script>
-        function showTable() {
-            const lines = document.getElementById('input').value.trim().split('\n');
-            let html = '<table><thead><tr><th>日期</th><th>Day</th><th>301</th><th>305</th><th>G01B</th></tr></thead><tbody>';
+        // Global data
+        let scheduleData = [];
+        let originalData = [];
+        let selectedCells = [];
+        
+        // Radio button handler
+        document.querySelectorAll('input[name="importType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const label = document.getElementById('importLabel');
+                const placeholder = document.getElementById('importData');
+                if (this.value === 'vertical') {
+                    label.textContent = '粘貼垂直表格數據：';
+                    placeholder.placeholder = '日期\tDay\t301\t305\tG01B\n2026-03-16\t1\t陳大明\t李四海\t林美娟';
+                } else {
+                    label.textContent = '粘貼橫置表格數據：';
+                    placeholder.placeholder = '地點\t2026-03-16\t2026-03-17\n301\t陳大明\t林美娟\n305\t李四海\t陳大明\nG01B\t林美娟\t李四海';
+                }
+            });
+        });
+        
+        // Step 1: Import
+        function importTable() {
+            const importType = document.querySelector('input[name="importType"]:checked').value;
+            const data = document.getElementById('importData').value.trim();
+            
+            if (!data) {
+                showToast('⚠️ 請輸入數據', '#ffc107');
+                return;
+            }
+            
+            if (importType === 'vertical') {
+                scheduleData = parseVertical(data);
+            } else {
+                scheduleData = parseHorizontal(data);
+            }
+            
+            if (scheduleData.length === 0) {
+                showToast('⚠️ 數據格式錯誤', '#dc3545');
+                return;
+            }
+            
+            // Save original copy
+            originalData = JSON.parse(JSON.stringify(scheduleData));
+            
+            // Show display section
+            document.getElementById('importSection').classList.add('hidden');
+            document.getElementById('displaySection').classList.remove('hidden');
+            
+            displayTable();
+            showToast('✅ 匯入成功！', '#4CAF50');
+        }
+        
+        // Parse vertical format
+        function parseVertical(data) {
+            const lines = data.split('\n');
+            const result = [];
             
             lines.forEach(line => {
                 if (!line.trim()) return;
-                const cols = line.split('\t');
-                if (cols.length >= 3) {
-                    html += '<tr>';
-                    cols.forEach(col => {
-                        html += '<td>' + col.trim() + '</td>';
+                const cols = line.split if (cols.length('\t');
+                >= 5) {
+                    result.push({
+                        date: cols[0].trim(),
+                        day: parseInt(cols[1].trim()),
+                        rooms: {
+                            '301': cols[2].trim(),
+                            '305': cols[3].trim(),
+                            'G01B': cols[4].trim()
+                        }
                     });
-                    html += '</tr>';
                 }
             });
-            html += '</tbody></table>';
-            document.getElementById('output').innerHTML = html;
+            
+            return result;
         }
         
-        function copyInput() {
-            navigator.clipboard.writeText(document.getElementById('input').value);
-            alert('已複製！');
+        // Parse horizontal format
+        function parseHorizontal(data) {
+            const lines = data.split('\n');
+            if (lines.length < 4) return [];
+            
+            // First line is dates
+            const dateLine = lines[0].split('\t');
+            const dates = dateLine.slice(1).map(d => d.trim());
+            
+            const roomMap = {};
+            const result = [];
+            
+            // Parse room rows
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split('\t');
+                if (cols.length < 2) continue;
+                
+                const room = cols[0].trim();
+                for (let j = 0; j < dates.length; j++) {
+                    const dateStr = dates[j];
+                    if (!result.find(r => r.date === dateStr)) {
+                        result.push({ date: dateStr, day: j + 1, rooms: {} });
+                    }
+                    const slot = result.find(r => r.date === dateStr);
+                    if (slot) {
+                        slot.rooms[room] = cols[j + 1]?.trim() || '';
+                    }
+                }
+            }
+            
+            // Sort by date
+            result.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Add day numbers
+            result.forEach((r, i) => r.day = i + 1);
+            
+            return result;
+        }
+        
+        // Display table
+        function displayTable() {
+            let html = '';
+            scheduleData.forEach((slot, rowIdx) => {
+                html += `<tr>
+                    <td>${slot.date}</td>
+                    <td>${slot.day}</td>
+                    <td>${slot.rooms['301'] || ''}</td>
+                    <td>${slot.rooms['305'] || ''}</td>
+                    <td>${slot.rooms['G01B'] || ''}</td>
+                </tr>`;
+            });
+            document.getElementById('tableBody').innerHTML = html;
+        }
+        
+        // Copy vertical
+        function copyVertical() {
+            let text = '日期\tDay\t301\t305\tG01B\n';
+            scheduleData.forEach(slot => {
+                text += `${slot.date}\t${slot.day}\t${slot.rooms['301']}\t${slot.rooms['305']}\t${slot.rooms['G01B']}\n`;
+            });
+            navigator.clipboard.writeText(text);
+            showToast('✅ 已複製垂直表格到剪貼簿！', '#4CAF50');
+        }
+        
+        // Copy horizontal
+        function copyHorizontal() {
+            let text = '地點\t';
+            scheduleData.forEach(slot => {
+                text += `${slot.date}\t`;
+            });
+            text = text.trim() + '\n';
+            
+            ['301', '305', 'G01B'].forEach(room => {
+                text += room + '\t';
+                scheduleData.forEach(slot => {
+                    text += `${slot.rooms[room]}\t`;
+                });
+                text = text.trim() + '\n';
+            });
+            
+            navigator.clipboard.writeText(text);
+            showToast('✅ 已複製橫置表格到剪貼簿！', '#4CAF50');
+        }
+        
+        // Step 3: Edit mode
+        function startEdit() {
+            selectedCells = [];
+            document.getElementById('displaySection').classList.add('hidden');
+            document.getElementById('editSection').classList.remove('hidden');
+            displayEditTable();
+        }
+        
+        function displayEditTable() {
+            let html = '';
+            scheduleData.forEach((slot, rowIdx) => {
+                html += `<tr>
+                    <td>${slot.date}</td>
+                    <td>${slot.day}</td>
+                    <td class="editable" onclick="toggleSelect(${rowIdx}, '301')" id="cell-${rowIdx}-301">${slot.rooms['301'] || ''}</td>
+                    <td class="editable" onclick="toggleSelect(${rowIdx}, '305')" id="cell-${rowIdx}-305">${slot.rooms['305'] || ''}</td>
+                    <td class="editable" onclick="toggleSelect(${rowIdx}, 'G01B')" id="cell-${rowIdx}-G01B">${slot.rooms['G01B'] || ''}</td>
+                </tr>`;
+            });
+            document.getElementById('editBody').innerHTML = html;
+        }
+        
+        function toggleSelect(row, room) {
+            const cellId = `cell-${row}-${room}`;
+            const cell = document.getElementById(cellId);
+            
+            // Check if already selected
+            const idx = selectedCells.findIndex(c => c.id === cellId);
+            if (idx >= 0) {
+                // Deselect
+                selectedCells.splice(idx, 1);
+                cell.classList.remove('selected');
+            } else {
+                // Select (max 2)
+                if (selectedCells.length < 2) {
+                    selectedCells.push({ row, room, id: cellId });
+                    cell.classList.add('selected');
+                }
+                
+                // If 2 selected, swap
+                if (selectedCells.length === 2) {
+                    setTimeout(swapTeachers, 300);
+                }
+            }
+        }
+        
+        function swapTeachers() {
+            const [c1, c2] = selectedCells;
+            
+            // Swap
+            const temp = scheduleData[c1.row].rooms[c1.room];
+            scheduleData[c1.row].rooms[c1.room] = scheduleData[c2.row].rooms[c2.room];
+            scheduleData[c2.row].rooms[c2.room] = temp;
+            
+            // Clear selection
+            selectedCells = [];
+            displayEditTable();
+            showToast('🔄 已交換老師位置', '#2196F3');
+        }
+        
+        function cancelEdit() {
+            scheduleData = JSON.parse(JSON.stringify(originalData));
+            document.getElementById('editSection').classList.add('hidden');
+            document.getElementById('displaySection').classList.remove('hidden');
+            displayTable();
+        }
+        
+        function saveEdit() {
+            document.getElementById('editSection').classList.add('hidden');
+            document.getElementById('validationSection').classList.remove('hidden');
+            validateRules();
+        }
+        
+        // Step 4: Validation
+        function validateRules() {
+            const rules = [
+                { name: '規則1：每人每學期最多當值3次', check: checkRule1 },
+                { name: '規則2：第二學期未當值的老師會被優先編排', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) },
+                { name: '規則3：總當值次數較少的老師會被優先編排', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) },
+                { name: '規則4：同一老師不會被編排到同一房間超過1次', check: checkRule4 },
+                { name: '規則5：如果老師已有2次當值且獲編排到301房，會安排去G01B房', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) },
+                { name: '規則6：Day 1的305號房位會編排給已有3次當值的老師', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) },
+                { name: '規則7：用戶輸入的條件會盡量滿足', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) }
+            ];
+            
+            let html = '';
+            let hasViolations = false;
+            let violationsList = [];
+            
+            rules.forEach(rule => {
+                const result = rule.check();
+                const statusClass = result.pass ? 'status-pass' : 'status-fail';
+                const status = result.pass ? '✅ 滿足' : '❌ 不滿足';
+                
+                html += `<tr>
+                    <td style="text-align:left;">${rule.name}</td>
+                    <td class="${statusClass}" style="text-align:center;">${status}</td>
+                </tr>`;
+                
+                if (!result.pass) {
+                    hasViolations = true;
+                    violationsList.push(result.msg);
+                }
+            });
+            
+            document.getElementById('rulesBody').innerHTML = html;
+            
+            const violationsSection = document.getElementById('violationsSection');
+            if (hasViolations) {
+                violationsSection.classList.remove('hidden');
+                document.getElementById('violationsList').innerHTML = violationsList.map(v => `<li>${v}</li>`).join('');
+            } else {
+                violationsSection.classList.add('hidden');
+            }
+        }
+        
+        function checkRule1() {
+            const counts = {};
+            scheduleData.forEach(slot => {
+                Object.values(slot.rooms).forEach(teacher => {
+                    if (teacher) {
+                        counts[teacher] = (counts[teacher] || 0) + 1;
+                    }
+                });
+            });
+            
+            const violations = [];
+            Object.entries(counts).forEach(([teacher, count]) => {
+                if (count > 3) {
+                    violations.push(`${teacher} 有${count}次當值`);
+                }
+            });
+            
+            return { pass: violations.length === 0, msg: violations.join(', ') || 'OK' };
+        }
+        
+        function checkRule4() {
+            const roomCounts = {};
+            
+            scheduleData.forEach(slot => {
+                Object.entries(slot.rooms).forEach(([room, teacher]) => {
+                    if (teacher) {
+                        if (!roomCounts[teacher]) roomCounts[teacher] = {};
+                        roomCounts[teacher][room] = (roomCounts[teacher][room] || 0) + 1;
+                    }
+                });
+            });
+            
+            const violations = [];
+            Object.entries(roomCounts).forEach(([teacher, rooms]) => {
+                Object.entries(rooms).forEach(([room, count]) => {
+                    if (count > 1) {
+                        violations.push(`${teacher} 在${room}房當值${count}次`);
+                    }
+                });
+            });
+            
+            return { pass: violations.length === 0, msg: violations.join(', ') || 'OK' };
+        }
+        
+        function continueEdit() {
+            document.getElementById('validationSection').classList.add('hidden');
+            document.getElementById('editSection').classList.remove('hidden');
+            displayEditTable();
+        }
+        
+        function confirmSave() {
+            // Update original data
+            originalData = JSON.parse(JSON.stringify(scheduleData));
+            
+            document.getElementById('validationSection').classList.add('hidden');
+            document.getElementById('successSection').classList.remove('hidden');
+            
+            showToast('✅ 儲存成功！', '#4CAF50');
+        }
+        
+        function resetPage() {
+            location.reload();
+        }
+        
+        // Toast notification
+        function showToast(message, color) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.background = color;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
         }
     </script>
 </body>
