@@ -532,7 +532,7 @@
             const teachersWithDuty = teachers.filter(t => t.assignedCount > 0).length;
             const exemptCount = (window.exemptTeachers || []).length;
             
-            (document.getElementById('summary') || {}).innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + 0 + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button><a href="manual.html" target="_blank"><button style="padding:10px 20px;background:#9C27B0;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">手動輸入</button></a>';
+            (document.getElementById('summary') || {}).innerHTML = '<div class="summary-card"><div class="num">' + dates.length + '</div><div class="label">總當值日</div></div><div class="summary-card"><div class="num">' + totalAssignments + '</div><div class="label">已編排</div></div><div class="summary-card"><div class="num">' + 0 + '</div><div class="label">未編排</div></div><div class="summary-card"><div class="num">' + teachersWithDuty + '</div><div class="label">參與老師</div></div><button onclick="copyExcel()" style="padding:10px 20px;background:#4CAF50;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:20px;">Excel版 - 複製表格</button><button onclick="copyWord()" style="padding:10px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">Word版 - 複製表格</button><button onclick="goToManual()" style="padding:10px 20px;background:#9C27B0;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">📤 匯入到手動編輯</button><a href="home.html"><button style="padding:10px 20px;background:#666;color:white;border:none;border-radius:8px;cursor:pointer;margin-left:10px;">🏠 首頁</button></a>';
             
             // Show the results section
             const rs = document.getElementById('resultsSection');
@@ -670,7 +670,21 @@
             navigator.clipboard.writeText(text);
             alert('已複製Word格式！');
         }
-</script>
+function goToManual() {
+            // Build schedule data
+            let data = '日期\tDay\t301\t305\tG01B\n';
+            dates.forEach(slot => {
+                data += slot.date + '\t' + slot.day + '\t';
+                data += (slot.teachers.find(t => t.room === '301')?.teacher || '') + '\t';
+                data += (slot.teachers.find(t => t.room === '305')?.teacher || '') + '\t';
+                data += (slot.teachers.find(t => t.room === 'G01B')?.teacher || '') + '\n';
+            });
+            
+            // Encode and redirect
+            const encoded = encodeURIComponent(data);
+            window.location.href = 'manual.html?import=' + encoded;
+        }
+        </script>
 <script>
 function clearDefault(el) {
     if (el.dataset.cleared !== 'true') {
@@ -686,6 +700,20 @@ function restoreDefault(el) {
         el.dataset.cleared = 'false';
     }
 }
-</script>
+function goToManual() {
+            // Build schedule data
+            let data = '日期\tDay\t301\t305\tG01B\n';
+            dates.forEach(slot => {
+                data += slot.date + '\t' + slot.day + '\t';
+                data += (slot.teachers.find(t => t.room === '301')?.teacher || '') + '\t';
+                data += (slot.teachers.find(t => t.room === '305')?.teacher || '') + '\t';
+                data += (slot.teachers.find(t => t.room === 'G01B')?.teacher || '') + '\n';
+            });
+            
+            // Encode and redirect
+            const encoded = encodeURIComponent(data);
+            window.location.href = 'manual.html?import=' + encoded;
+        }
+        </script>
 </body>
 </html>

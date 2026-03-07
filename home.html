@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>欠交功課當值系統</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, "PingFang HK", "Microsoft JhengHei", sans-serif; 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 { 
+            color: #1e3c72; 
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        .option-card {
+            background: #f9f9f9;
+            border: 2px solid #eee;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: block;
+        }
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #1e3c72;
+        }
+        .option-card h2 {
+            color: #1e3c72;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .option-card p {
+            color: #666;
+            margin: 0;
+            font-size: 14px;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 欠交功課當值系統</h1>
+        <p class="subtitle">中華聖潔會靈風中學</p>
+        
+        <a href="index.html" class="option-card">
+            <div class="icon">🤖</div>
+            <h2>自動製作當值表</h2>
+            <p>根據7條規則自動編排老師當值</p>
+        </a>
+        
+        <a href="manual.html" class="option-card">
+            <div class="icon">✏️</div>
+            <h2>手動製作當值表</h2>
+            <p>匯入現有表格、編輯、檢查規則</p>
+        </a>
+        
+        <div class="footer">
+            © 2026 LSC 欠交功課當值系統
+        </div>
+    </div>
+</body>
+</html>
