@@ -674,7 +674,7 @@ function goToManual() {
             // Build schedule data
             let data = '日期\tDay\t301\t305\tG01B\n';
             dates.forEach(slot => {
-                data += slot.date + '\t' + slot.day + '\t';
+                data += slot.date + '\t' + (slot.day || '') + '\t';
                 data += (slot.teachers.find(t => t.room === '301')?.teacher || '') + '\t';
                 data += (slot.teachers.find(t => t.room === '305')?.teacher || '') + '\t';
                 data += (slot.teachers.find(t => t.room === 'G01B')?.teacher || '') + '\n';
@@ -704,7 +704,7 @@ function goToManual() {
             // Build schedule data
             let data = '日期\tDay\t301\t305\tG01B\n';
             dates.forEach(slot => {
-                data += slot.date + '\t' + slot.day + '\t';
+                data += slot.date + '\t' + (slot.day || '') + '\t';
                 data += (slot.teachers.find(t => t.room === '301')?.teacher || '') + '\t';
                 data += (slot.teachers.find(t => t.room === '305')?.teacher || '') + '\t';
                 data += (slot.teachers.find(t => t.room === 'G01B')?.teacher || '') + '\n';
