@@ -507,19 +507,7 @@
                 });
             });
             
-            // Display violations if any
-            if (violations.length > 0) {
-                let html = '<div style="margin-top:20px;padding:15px;background:#fff3cd;border-radius:10px;">';
-                html += '<h3 style="color:#856404;margin-top:0;">⚠️ 未能完全滿足既條件</h3>';
-                html += '<ul style="color:#856404;">';
-                violations.forEach(v => {
-                    html += `<li>${v.message}</li>`;
-                });
-                html += '</ul></div>';
-                
-                const resultsDiv = document.getElementById('resultsSection');
-                (resultsDiv || {}).innerHTML += html;
-            }
+            
         }
         
         function displayResults() { console.log('displayResults called, dates:', dates?.length);
@@ -586,13 +574,13 @@
         
         // Rule 1: Max 3 duties
         const max3Violations = teachers.filter(t => t.assignedCount > 3).length;
-        ruleStatuses.push({rule:'Rule 1: 最多3節', status: max3Violations === 0 ? '滿足' : '全部不滿足'});
+        ruleStatuses.push({rule:'規則1：每人每學期最多當值3次', status: max3Violations === 0 ? '✅ 滿足' : '❌ 不滿足'});
         
         // Rule 2: Term2=0 priority (always satisfied in algorithm)
-        ruleStatuses.push({rule:'Rule 2: Term2=0優先', status: '滿足'});
+        ruleStatuses.push({rule:'規則2：第二學期未當值的老師會被優先編排', status: '✅ 滿足'});
         
         // Rule 3: Total count priority (always satisfied in algorithm)
-        ruleStatuses.push({rule:'Rule 3: 總次數少優先', status: '滿足'});
+        ruleStatuses.push({rule:'規則3：總當值次數較少的老師會被優先編排', status: '✅ 滿足'});
         
         // Rule 4: Same room check
         let sameRoomViolations = 0;
@@ -601,20 +589,20 @@
                 if (teacherRoomCounts[t][r] > 1) sameRoomViolations++;
             });
         });
-        ruleStatuses.push({rule:'Rule 4: 同一房間多次', status: sameRoomViolations === 0 ? '滿足' : '全部不滿足'});
+        ruleStatuses.push({rule:'規則4：同一老師不會被編排到同一房間超過1次', status: sameRoomViolations === 0 ? '✅ 滿足' : '❌ 不滿足'});
         
         // Rule 5: 2 duties + 301 -> G01B
-        ruleStatuses.push({rule:'Rule 5: 2次+301→G01B', status: '滿足'});
+        ruleStatuses.push({rule:'規則5：如果老師已有2次當值且獲編排到301房，會安排去G01B房', status: '✅ 滿足'});
         
         // Rule 6: Day 1 305 -> 3 duties
         const day1Slot305 = dates.find(d => d.day === 1)?.teachers.find(t => t.room === '305');
         const day1Teacher = day1Slot305 ? teachers.find(t => t.name === day1Slot305.teacher) : null;
-        const rule6Status = day1Teacher && (day1Teacher.prevCount + day1Teacher.assignedCount) >= 3 ? '滿足' : '部分滿足';
-        ruleStatuses.push({rule:'Rule 6: Day1 305→3次老師', status: rule6Status});
+        const rule6Status = day1Teacher && (day1Teacher.prevCount + day1Teacher.assignedCount) >= 3 ? '✅ 滿足' : '⚠️ 部分滿足';
+        ruleStatuses.push({rule:'規則6：Day 1的305號房位會編排給已有3次當值的老師', status: rule6Status});
         
         // Rule 7: Conditions
         const conditionViolations = violations.filter(v => v.includes('條件')).length;
-        ruleStatuses.push({rule:'Rule 7: 條件', status: conditionViolations === 0 ? '滿足' : '部分滿足'});
+        ruleStatuses.push({rule:'規則7：用戶輸入的條件會盡量滿足', status: conditionViolations === 0 ? '✅ 滿足' : '⚠️ 部分滿足'});
         
         // Build rules status table
         const rulesHtml = '<table style="width:100%;max-width:600px;border-collapse:collapse;margin:20px auto;"><thead><tr style="background:#1e3c72;color:white;"><th style="padding:10px;text-align:left;">規則</th><th style="padding:10px;text-align:center;">狀態</th></tr></thead><tbody>' + 
@@ -626,7 +614,7 @@
         
         const rulesDiv = document.createElement('div');
         rulesDiv.style.cssText = 'margin-top:20px;';
-        rulesDiv.innerHTML = '<h3 style="text-align:center;">📋 編排規則狀態</h3>' + rulesHtml;
+        rulesDiv.innerHTML = '<h3 style="text-align:center;">📋 編排規則檢查結果</h3>' + rulesHtml;
         document.getElementById('resultsSection').appendChild(rulesDiv);
         
         // Show violations
