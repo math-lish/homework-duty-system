@@ -558,6 +558,47 @@
             // Show the results section
             const rs = document.getElementById('resultsSection');
             if (rs) { rs.style.display = 'block'; }
+        
+        // Validate all 7 rules
+        let violations = [];
+        
+        // Rule 4: Check same room twice
+        const teacherRoomCounts = {};
+        dates.forEach(slot => {
+            slot.teachers.forEach(t => {
+                if (!teacherRoomCounts[t.teacher]) teacherRoomCounts[t.teacher] = {};
+                if (!teacherRoomCounts[t.teacher][t.room]) teacherRoomCounts[t.teacher][t.room] = 0;
+                teacherRoomCounts[t.teacher][t.room]++;
+            });
+        });
+        Object.keys(teacherRoomCounts).forEach(t => {
+            Object.keys(teacherRoomCounts[t]).forEach(r => {
+                if (teacherRoomCounts[t][r] > 1) {
+                    violations.push('⚠️ Rule 4: ' + t + ' 同一房間 ' + r + ' 超過1次');
+                }
+            });
+        });
+        
+        // Rule 6: Day 1 305 should go to 3-duty teacher
+        const day1Slot = dates.find(d => d.day === 1);
+        if (day1Slot) {
+            const t305 = day1Slot.teachers.find(t => t.room === '305');
+            if (t305) {
+                const teacher = teachers.find(t => t.name === t305.teacher);
+                if (teacher && (teacher.prevCount + teacher.assignedCount) < 3) {
+                    violations.push('⚠️ Rule 6: Day 1既305位 (' + t305.teacher + ') 應該俾3次老師');
+                }
+            }
+        }
+        
+        // Show violations
+        if (violations.length > 0) {
+            const vDiv = document.createElement('div');
+            vDiv.style.cssText = 'margin-top:20px;padding:15px;background:#fff3cd;border-radius:10px;';
+            vDiv.innerHTML = '<h3 style="margin-top:0;">⚠️ 編排規則提醒</h3><ul>' + violations.map(v => '<li>' + v + '</li>').join('') + '</ul>';
+            document.getElementById('resultsSection').appendChild(vDiv);
+        }
+
         }
         
         function printSchedule() {
