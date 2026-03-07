@@ -248,10 +248,17 @@
         function parseVertical(data) {
             const lines = data.split('\n');
             const result = [];
+            let isFirst = true;
             
             lines.forEach(line => {
                 if (!line.trim()) return;
                 const cols = line.split('\t');
+                // Skip header line
+                if (isFirst && (cols[0].trim() === '日期' || cols[0].trim() === 'Date')) {
+                    isFirst = false;
+                    return;
+                }
+                isFirst = false;
                 if (cols.length >= 5) {
                     result.push({
                         date: cols[0].trim(),
