@@ -67,6 +67,20 @@
                 <label><input type="radio" name="importType" value="vertical" checked> 垂直表格 (Excel直向版)</label>
                 <label><input type="radio" name="importType" value="horizontal"> 橫置表格 (Word橫向版)</label>
             </div>
+            <div class="condition-inputs" style="margin-top:15px;padding:15px;background:#fff;border-radius:8px;">
+                <h4 style="margin:10px 0;">規則7 條件設定（可選）</h4>
+                <label style="margin-top:10px;">必然不能當值日 (老師名稱，每行一個)：</label>
+                <textarea id="cannotDays" style="height:60px;" placeholder="陳大明
+李四海"></textarea>
+                
+                <label style="margin-top:10px;">盡量滿足條件 (老師名稱,+Day/-Day，每行一個)：</label>
+                <textarea id="preferDays" style="height:60px;" placeholder="陳大明,+1,-5
+李四海,-2"></textarea>
+                
+                <label style="margin-top:10px;">溫習日（這些日期老師不能當值）：</label>
+                <textarea id="revisionDays" style="height:60px;" placeholder="2026-05-04,1
+2026-05-05,2"></textarea>
+            </div>
             <label id="importLabel">粘貼垂直表格數據：</label>
             <textarea id="importData" placeholder="日期	Day	301	305	G01B
 2026-03-16	1	陳大明	李四海	林美娟
@@ -392,6 +406,14 @@
         
         // Step 4: Validation
         function validateRules() {
+            // Read Rule 7 conditions
+            const cannotInput = document.getElementById('cannotDays')?.value || '';
+            const preferInput = document.getElementById('preferDays')?.value || '';
+            const revisionInput = document.getElementById('revisionDays')?.value || '';
+            
+            window.cannotDays = cannotInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.preferDays = preferInput.split('\n').map(s => s.trim()).filter(s => s);
+            window.revisionDays = revisionInput.split('\n').map(s => s.trim()).filter(s => s);
             const rules = [
                 { name: '規則1：每人每學期最多當值3次', check: checkRule1 },
                 { name: '規則2：第二學期未當值的老師會被優先編排', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) },
@@ -399,7 +421,8 @@
                 { name: '規則4：同一老師不會被編排到同一房間超過1次', check: checkRule4 },
                 { name: '規則5：如果老師已有2次當值且獲編排到301房，會安排去G01B房', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) },
                 { name: '規則6：Day 1的305號房位會編排給已有3次當值的老師', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) },
-                { name: '規則7：用戶輸入的條件會盡量滿足', check: () => ({ pass: true, msg: '無法從手動編輯驗證' }) }
+                { name: '規則7：用戶輸入的條件會盡量滿足', check: checkRule7 },
+                { name: '規則8：同一位老師不會在同一天當值超過一個房間', check: checkRule8 }
             ];
             
             let html = '';
@@ -418,7 +441,11 @@
                 
                 if (!result.pass) {
                     hasViolations = true;
+                    if (result.msg.includes('\n')) {
+                    result.msg.split('\n').forEach(m => violationsList.push(m));
+                } else {
                     violationsList.push(result.msg);
+                }
                 }
             });
             
@@ -450,7 +477,7 @@
                 }
             });
             
-            return { pass: violations.length === 0, msg: violations.join(', ') || 'OK' };
+            return { pass: violations.length === 0, msg: violations.join('\n') || 'OK' };
         }
         
         function checkRule4() {
@@ -474,7 +501,46 @@
                 });
             });
             
-            return { pass: violations.length === 0, msg: violations.join(', ') || 'OK' };
+            return { pass: violations.length === 0, msg: violations.join('\n') || 'OK' };
+        }
+        
+        // Rule 8: Same teacher cannot be in 2 rooms on same day
+        function checkRule8() {
+            const violations = [];
+            
+            scheduleData.forEach(slot => {
+                const teachersOnDay = Object.values(slot.rooms).filter(t => t);
+                const uniqueTeachers = [...new Set(teachersOnDay)];
+                
+                if (teachersOnDay.length !== uniqueTeachers.length) {
+                    const duplicates = teachersOnDay.filter((t, i) => teachersOnDay.indexOf(t) !== i);
+                    duplicates.forEach(t => {
+                        if (!violations.includes(`${t} 在${slot.date}當值多於1個房間`)) violations.push(`${t} 在${slot.date}當值多於1個房間`);
+                    });
+                }
+            });
+            
+            return { pass: violations.length === 0, msg: violations.join('\n') || 'OK' };
+        }
+        
+        // Rule 7: User input conditions
+        function checkRule7() {
+            const cannotDays = window.cannotDays || [];
+            const preferDays = window.preferDays || [];
+            const revisionDays = window.revisionDays || [];
+            
+            const violations = [];
+            
+            // Check cannot days
+            scheduleData.forEach(slot => {
+                Object.values(slot.rooms).forEach(teacher => {
+                    if (teacher && cannotDays.includes(teacher)) {
+                        if (!violations.includes(`${teacher} 在${slot.date} (Day ${slot.day}) 必然不能當值`)) violations.push(`${teacher} 在${slot.date} (Day ${slot.day}) 必然不能當值`);
+                    }
+                });
+            });
+            
+            return { pass: violations.length === 0, msg: violations.join('\n') || 'OK' };
         }
         
         function continueEdit() {
@@ -487,8 +553,10 @@
             // Update original data
             originalData = JSON.parse(JSON.stringify(scheduleData));
             
+            // Go back to Step 2 display
             document.getElementById('validationSection').classList.add('hidden');
-            document.getElementById('successSection').classList.remove('hidden');
+            document.getElementById('displaySection').classList.remove('hidden');
+            displayTable();
             
             showToast('✅ 儲存成功！', '#4CAF50');
         }
